@@ -4,11 +4,11 @@
 //
 //  Created by Keith Irwin on Wed Feb 11 2004.
 //  This file is in its final form.  Its code will not change.
-
+import java.math.*;
 
 public class DES {
             
-    public static byte[/*8*/] encode( byte[/*8*/] data, byte[/*8*/] key, IDESRound round ) {
+    public static byte[/*8*/] encode( byte[/*8*/] data, byte[/*8*/] key, DESRound round ) {
         // Refine key to 56 bits and store it in a long
         long refinedKey = 0;
         for (int i=0; i<56; i++) {
@@ -57,7 +57,7 @@ public class DES {
     }
     
 
-    public static byte[/*8*/] decode( byte[/*8*/] data, byte[/*8*/] key, IDESRound round ) {
+    public static byte[/*8*/] decode( byte[/*8*/] data, byte[/*8*/] key, DESRound round ) {
         // Refine key to 56 bits and store it in a long
         long refinedKey = 0;
         for (int i=0; i<56; i++) {
@@ -218,21 +218,26 @@ public class DES {
 	return output;
     };
 
-    public static XORByteArrays(byte[] b1, byte[] b2)
+    public static byte[] XORByteArrays(byte[] b1, byte[] b2)
     {
         if(b1.length != b2.length)
         {
-            return "Error: Arrays are not the same length";
+            return new byte[1];
         }
 
         byte[] outArray = new byte[b1.length];
 
         for(int x = 0; x < b1.length; ++x)
         {
-            outArray[x] = b1[x] ^ b2[x];
+            outArray[x] = (byte)(b1[x] ^ b2[x]);
         }
 
         return outArray;
+    }
+
+    public static String toHex(String arg)
+    {
+        return String.format("%16x", new BigInteger(1, arg.getBytes()));
     }
 
     public static int[] keyGenBits = { 13, 16, 10, 23, 0, 4, 2, 27, 14, 5, 20, 9, 22, 18, 11,
