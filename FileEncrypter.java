@@ -36,6 +36,9 @@ public class FileEncrypter {
 	private JTextArea tf_iv;
 	private StringBuilder sb = new StringBuilder();
 	private java.io.File file;
+
+	//Instantiate the encrypter
+	private OutsideChainingMode encrypter = new OutsideChainingMode();
 	
 	private String hexGenerator()
 	{
@@ -291,8 +294,15 @@ public class FileEncrypter {
 				
 				if (canRun[4] == true){
 					//run here
-					System.out.println("Encrypting");
-					
+					try
+					{
+						System.out.println("Encrypting");
+						encrypter.encode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+					}
+					catch(IOException e)
+					{
+						e.printStackTrace();
+					}
 				}
 				
 			}
@@ -354,7 +364,15 @@ public class FileEncrypter {
 				
 				if (canRun[4] == true){
 					//run here
-					System.out.println("Decrypting");
+					try
+					{
+						System.out.println("Decrypting");
+						encrypter.decode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+					}
+					catch(IOException e)
+					{
+						e.printStackTrace();
+					}
 				}
 				
 			}
