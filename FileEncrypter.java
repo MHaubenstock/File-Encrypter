@@ -66,8 +66,8 @@ public class FileEncrypter {
 				return false;
 			}
 		}
+
 		return true;
-		
 	}
 	
 	/**

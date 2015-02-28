@@ -122,7 +122,20 @@ public class OutsideChainingMode
             for(int x = 1; x <= 15; ++x)
             {
                 if((c = in.read()) != -1)
-                    messageSegString += (char)c;
+                    //If its a valid hax digit, keep processing
+                    if(Character.digit((char)c, 16) != -1)
+                    {
+                        messageSegString += (char)c;
+                    }
+                    //Else throw an IOException
+                    //This is because you are reading in a decrypted file that should be all hex digits
+                    else
+                    {
+                        //Close the out file to prevent memory leaks
+                        out.close();
+
+                        throw new IOException("The encrypted file is corrupted!");
+                    }
                 else
                     messageSegString += " ";
             }
