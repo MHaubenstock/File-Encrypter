@@ -291,7 +291,8 @@ public class FileEncrypter {
 				
 				if (canRun[4] == true){
 					//run here
-					System.out.println("running");
+					System.out.println("Encrypting");
+					
 				}
 				
 			}
@@ -353,7 +354,7 @@ public class FileEncrypter {
 				
 				if (canRun[4] == true){
 					//run here
-					System.out.println("running");
+					System.out.println("Decrypting");
 				}
 				
 			}
