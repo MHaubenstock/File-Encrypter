@@ -1,13 +1,13 @@
 //
-//  CipherBlockChain.java
+//  OutsideChainingMode.java
 //  
 import java.io.*;
 import java.nio.file.*;
 
 
-public class CipherBlockChain
+public class OutsideChainingMode
 {
-    public CipherBlockChain()
+    public OutsideChainingMode()
     {    
     }
 
@@ -151,12 +151,5 @@ public class CipherBlockChain
         out.close();
 
         //return outMessage;
-    }
-
-    static String readFile(String path) throws IOException 
-    {
-        byte[] encoded = Files.readAllBytes(Paths.get(path));
-
-        return new String(encoded);
     }
 }
