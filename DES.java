@@ -238,7 +238,7 @@ public class DES {
 
     public static String toHex(String arg)
     {
-        return String.format("%16x", new BigInteger(1, arg.getBytes()));
+        return String.format("%16x", new BigInteger(1, arg.getBytes())).replaceAll(" ", "0");
     }
 
     public static int[] keyGenBits = { 13, 16, 10, 23, 0, 4, 2, 27, 14, 5, 20, 9, 22, 18, 11,
