@@ -4,11 +4,13 @@
 //
 //  Created by Keith Irwin on Wed Feb 11 2004.
 //  This file is in its final form.  Its code will not change.
+
 import java.math.*;
 
 public class DES {
             
     public static byte[/*8*/] encode( byte[/*8*/] data, byte[/*8*/] key, DESRound round ) {
+
         // Refine key to 56 bits and store it in a long
         long refinedKey = 0;
         for (int i=0; i<56; i++) {
@@ -56,7 +58,6 @@ public class DES {
         return finalData;
     }
     
-
     public static byte[/*8*/] decode( byte[/*8*/] data, byte[/*8*/] key, DESRound round ) {
         // Refine key to 56 bits and store it in a long
         long refinedKey = 0;
