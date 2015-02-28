@@ -10,7 +10,7 @@ public class CipherBlockChain
     {    
     }
 
-    public String encode(String filePath, String k1, String k2, String initVector) throws IOException
+    public void encode(String filePath, String k1, String k2, String initVector) throws IOException
     {
         //Convert keys and initialization vector to byte arrays
         long d1 = Long.decode("0x" + k1.substring(0,8)).longValue();
@@ -33,7 +33,9 @@ public class CipherBlockChain
         byte[] messageSegment = new byte[8];
         String messageSegString;
         String hexString;
-        String outMessage = "";
+
+        //Open print writer
+        PrintWriter out = new PrintWriter("testoutputEncoded.txt");
 
         //for(int x = 0; x < messageIn.length; x = x + 8)
         while ((c = in.read()) != -1)
@@ -65,22 +67,20 @@ public class CipherBlockChain
             messageSegment = DES.decode(messageSegment, key2, round);
             messageSegment = DES.encode(messageSegment, key1, round);
 
-            //Write 64 bits to the out message
-            outMessage += DES.byteArrayToString(messageSegment);
+            //Write 64 bits to the out file
+            out.print(DES.byteArrayToString(messageSegment));
 
             //Set IV to the decrypted block for chaining
             initializationVector = messageSegment;
         }
 
-        //Write to file
-        PrintWriter out = new PrintWriter("testoutput.txt");
-        out.print(outMessage);
+        //Close the out file
         out.close();
 
-        return outMessage;
+        //return outMessage;
     }
 
-    public String decode(String filePath, String k1, String k2, String initVector) throws IOException
+    public void decode(String filePath, String k1, String k2, String initVector) throws IOException
     {
         //Convert keys and initialization vector to byte arrays
         long d1 = Long.decode("0x" + k1.substring(0,8)).longValue();
@@ -105,6 +105,9 @@ public class CipherBlockChain
         String messageSegString;
         String hexString;
         String outMessage = "";
+
+        //Open print writer
+        PrintWriter out = new PrintWriter("testoutputDecoded.txt");
 
         //for(int x = 0; x < messageIn.length; x = x + 8)
         while ((c = in.read()) != -1)
@@ -136,14 +139,17 @@ public class CipherBlockChain
             //XOR with the initialization vector
             messageSegment = DES.XORByteArrays(messageSegment, initializationVector);
 
-            //Write 64 bits to the out message
-            outMessage += new String(messageSegment);
+            //Write 64 bits to the out file
+            out.print(new String(messageSegment));
 
             //Set IV to the decrypted block for chaining
             initializationVector = tempInitVector;
         }
 
-        return outMessage;
+        //Close the out file
+        out.close();
+
+        //return outMessage;
     }
 
     static String readFile(String path) throws IOException 
