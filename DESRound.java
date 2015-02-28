@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class DESRound implements IDESRound
+public class DESRound
 {
 	public byte[/*8*/] doOneRound(byte[/*8*/] data, byte[/*6*/] key)
 	{
