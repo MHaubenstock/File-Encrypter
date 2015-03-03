@@ -38,7 +38,6 @@ public class OutsideChainingMode
         //Open print writer
         PrintWriter out = new PrintWriter("testoutputEncoded.txt");
 
-        //for(int x = 0; x < messageIn.length; x = x + 8)
         while ((c = in.read()) != -1)
         {
             //Reset message segment string
@@ -52,10 +51,16 @@ public class OutsideChainingMode
                 if((c = in.read()) != -1)
                     messageSegString += (char)c;
                 else
-                    messageSegString += " ";
+                {
+                    messageSegString = String.format("%1$-" + (8 - x) + "s", messageSegString);
+                    System.out.println("DLKHDJHDKHKJDH     ---> " + messageSegString);
+                    break;
+                    //messageSegString += " ";
+                }
             }
 
             hexString = DES.toHex(messageSegString);
+            System.out.println(hexString);
             d1 = Long.decode("0x" + hexString.substring(0,8)).longValue();
             d2 = Long.decode("0x" + hexString.substring(8,16)).longValue();
             messageSegment = DES.twoLongsTo8ByteArray(d2, d1);
@@ -122,7 +127,7 @@ public class OutsideChainingMode
             for(int x = 1; x <= 15; ++x)
             {
                 if((c = in.read()) != -1)
-                    //If its a valid hax digit, keep processing
+                    //If its a valid hex digit, keep processing
                     if(Character.digit((char)c, 16) != -1)
                     {
                         messageSegString += (char)c;
