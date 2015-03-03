@@ -26,14 +26,13 @@ public class OutsideChainingMode
         d2 = Long.decode("0x" + initVector.substring(8,16)).longValue();
         byte[] initializationVector = DES.twoLongsTo8ByteArray(d2, d1);
 
-        FileReader in = new FileReader(filePath);
-        int c, count = 0;
+        InputStreamReader in = new InputStreamReader(new FileInputStream(filePath), "iso-8859-1");
+        long c, count = 0;
 
         //Decode
         DESRound round = new DESRound();
         byte[] messageSegment = new byte[8];
         String messageSegString;
-        String hexString;
 
         //Open print writer
         PrintWriter out = new PrintWriter("testoutputEncoded.txt");
@@ -43,26 +42,22 @@ public class OutsideChainingMode
             //Reset message segment string
             messageSegString = "";
 
-            messageSegString += (char)c;
+            messageSegString += String.format("%02x", c);
 
             //Already read first byte of block, now read the next seven
             for(int x = 1; x <= 7; ++x)
             {
                 if((c = in.read()) != -1)
-                    messageSegString += (char)c;
+                    messageSegString += String.format("%02x", c);
+
                 else
                 {
-                    messageSegString = String.format("%1$-" + (8 - x) + "s", messageSegString);
-                    System.out.println("DLKHDJHDKHKJDH     ---> " + messageSegString);
-                    break;
-                    //messageSegString += " ";
+                    messageSegString += String.format("%02x", 32);
                 }
             }
 
-            hexString = DES.toHex(messageSegString);
-            System.out.println(hexString);
-            d1 = Long.decode("0x" + hexString.substring(0,8)).longValue();
-            d2 = Long.decode("0x" + hexString.substring(8,16)).longValue();
+            d1 = Long.decode("0x" + messageSegString.substring(0,8)).longValue();
+            d2 = Long.decode("0x" + messageSegString.substring(8,16)).longValue();
             messageSegment = DES.twoLongsTo8ByteArray(d2, d1);
 
             //XOR with the initialization vector
@@ -101,19 +96,17 @@ public class OutsideChainingMode
         d2 = Long.decode("0x" + initVector.substring(8,16)).longValue();
         byte[] initializationVector = DES.twoLongsTo8ByteArray(d2, d1);
 
-        FileReader in = new FileReader(filePath);
-        int c, count = 0;
+        InputStreamReader in = new InputStreamReader(new FileInputStream(filePath), "iso-8859-1");
+        long c;
 
         //Decode
         DESRound round = new DESRound();
         byte[] messageSegment = new byte[8];
         byte[] tempInitVector;
         String messageSegString;
-        String hexString;
-        String outMessage = "";
 
         //Open print writer
-        PrintWriter out = new PrintWriter("testoutputDecoded.txt");
+        FileOutputStream out = new FileOutputStream("testoutputDecoded.txt");
 
         //for(int x = 0; x < messageIn.length; x = x + 8)
         while ((c = in.read()) != -1)
@@ -142,7 +135,7 @@ public class OutsideChainingMode
                         throw new IOException("The encrypted file is corrupted!");
                     }
                 else
-                    messageSegString += " ";
+                    messageSegString += "0";
             }
 
             d1 = Long.decode("0x" + messageSegString.substring(0,8)).longValue();
@@ -159,7 +152,7 @@ public class OutsideChainingMode
             messageSegment = DES.XORByteArrays(messageSegment, initializationVector);
 
             //Write 64 bits to the out file
-            out.print(new String(messageSegment));
+            out.write(messageSegment);
 
             //Set IV to the decrypted block for chaining
             initializationVector = tempInitVector;
@@ -167,7 +160,5 @@ public class OutsideChainingMode
 
         //Close the out file
         out.close();
-
-        //return outMessage;
     }
 }

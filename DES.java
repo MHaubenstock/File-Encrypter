@@ -238,6 +238,11 @@ public class DES {
 
     public static String toHex(String arg)
     {
+        //String t1 = String.format("%16x", new BigInteger(1, arg.getBytes())).replaceAll(" ", "0");
+        //String t2 = new String(t1, new Charset("iso-8859-1"));
+
+        //iso-8859-1
+        //System.out.println(t1 + "   ||   " + t2);
         return String.format("%16x", new BigInteger(1, arg.getBytes())).replaceAll(" ", "0");
     }
 
