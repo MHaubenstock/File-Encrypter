@@ -1,12 +1,12 @@
 //
-//  OutsideChainingMode.java
+//  InsideChainingMode.java
 //  
 import java.io.*;
 import java.nio.file.*;
 
-public class OutsideChainingMode extends Encrypter
+public class InsideChainingMode extends Encrypter
 {
-    public OutsideChainingMode()
+    public InsideChainingMode()
     {    
     }
 

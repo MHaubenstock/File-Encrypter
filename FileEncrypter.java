@@ -36,11 +36,15 @@ public class FileEncrypter implements EncryptEventListener
 	private JLabel lbl_iv;
 	private JTextArea tf_iv;
 	private JProgressBar progressBar;
+	private ButtonGroup modeGroup;
+	private JRadioButton ocmRadioButton;
+	private JRadioButton icmRadioButton;
 	private StringBuilder sb = new StringBuilder();
 	private java.io.File file;
 
 	//Instantiate the encrypter
-	private OutsideChainingMode encrypter = new OutsideChainingMode();
+	private OutsideChainingMode ocmEncrypter = new OutsideChainingMode();
+	private InsideChainingMode icmEncrypter = new InsideChainingMode();
 	
 	private String hexGenerator()
 	{
@@ -114,7 +118,8 @@ public class FileEncrypter implements EncryptEventListener
 	public FileEncrypter() {
 
 		//Add this instance to the list of encryption/decryption listeners
-		encrypter.addEventListener(this);
+		ocmEncrypter.addEventListener(this);
+		icmEncrypter.addEventListener(this);
 
 		initialize();
 		//one click highlight textfield key1
@@ -326,7 +331,10 @@ public class FileEncrypter implements EncryptEventListener
 						public void run() {
 							try
 							{
-								encrypter.encode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+								if(ocmRadioButton.isSelected())
+									ocmEncrypter.encode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+								else
+									icmEncrypter.encode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
 							}
 							catch(IOException e)
 							{
@@ -339,9 +347,9 @@ public class FileEncrypter implements EncryptEventListener
 		});
 		
 		//Decrypt
-				btn_decrypt.addActionListener(new ActionListener()
-				{	
-					public void actionPerformed(ActionEvent arg0){
+		btn_decrypt.addActionListener(new ActionListener()
+		{	
+			public void actionPerformed(ActionEvent arg0){
 						/*
 				Some error checking before allowing to run - 'run here' commented below
 				variables used:
@@ -399,7 +407,10 @@ public class FileEncrypter implements EncryptEventListener
 						public void run() {
 							try
 							{
-								encrypter.decode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+								if(ocmRadioButton.isSelected())
+									ocmEncrypter.decode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+								else
+									icmEncrypter.decode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
 							}
 							catch(IOException e)
 							{
@@ -409,7 +420,7 @@ public class FileEncrypter implements EncryptEventListener
 					}.start();
 				}
 			}
-		});		
+		});	
 	}
 
 	/**
@@ -418,7 +429,7 @@ public class FileEncrypter implements EncryptEventListener
 	public void initialize() {
 		frmFileEncryptionInput = new JFrame();
 		frmFileEncryptionInput.setTitle("File Encryption/Decryption Input");
-		frmFileEncryptionInput.setBounds(100, 200, 450, 376);
+		frmFileEncryptionInput.setBounds(100, 200, 450, 400);
 		frmFileEncryptionInput.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmFileEncryptionInput.getContentPane().setLayout(null);
 		
@@ -463,11 +474,11 @@ public class FileEncrypter implements EncryptEventListener
 		frmFileEncryptionInput.getContentPane().add(btn_random_iv);
 		
 		btn_encrypt = new JButton("Encrypt");
-		btn_encrypt.setBounds(88, 281, 118, 46);
+		btn_encrypt.setBounds(88, 305, 118, 46);
 		frmFileEncryptionInput.getContentPane().add(btn_encrypt);
 		
 		btn_decrypt = new JButton("Decrypt");
-		btn_decrypt.setBounds(209, 281, 118, 46);
+		btn_decrypt.setBounds(209, 305, 118, 46);
 		frmFileEncryptionInput.getContentPane().add(btn_decrypt);
 		
 		JLabel lbl_plainText = new JLabel("Plain Text");
@@ -493,9 +504,21 @@ public class FileEncrypter implements EncryptEventListener
 		progressBar = new JProgressBar();
 		progressBar.setValue(0);
 		progressBar.setStringPainted(true);
-		Border border = BorderFactory.createTitledBorder("Ready");
-		progressBar.setBorder(border);
-		progressBar.setBounds(88, 205, 239, 50);
+		progressBar.setBorder(BorderFactory.createTitledBorder("Ready"));
+		progressBar.setBounds(88, 229, 239, 50);
 		frmFileEncryptionInput.getContentPane().add(progressBar);
+
+		ocmRadioButton = new JRadioButton("Outside Chaining");
+		ocmRadioButton.setSelected(true);
+		ocmRadioButton.setBounds(59, 185, 150, 25);
+		frmFileEncryptionInput.getContentPane().add(ocmRadioButton);
+		
+		icmRadioButton = new JRadioButton("Inside Chaining");
+		icmRadioButton.setBounds(241, 185, 150, 25);
+		frmFileEncryptionInput.getContentPane().add(icmRadioButton);
+
+		modeGroup = new ButtonGroup();
+		modeGroup.add(ocmRadioButton);
+		modeGroup.add(icmRadioButton);
 	}
 }
