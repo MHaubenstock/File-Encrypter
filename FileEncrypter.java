@@ -322,7 +322,19 @@ public class FileEncrypter implements EncryptEventListener
 				if (canRun[4] == true){
 					//run here
 					System.out.println("Encrypting");
-					new Thread() { public void run() {try{encrypter.encode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));}catch(IOException e){e.printStackTrace();}}}.start();
+
+					new Thread(){
+						public void run() {
+							try
+							{
+								encrypter.encode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+							}
+							catch(IOException e)
+							{
+								e.printStackTrace();
+							}
+						}
+					}.start();
 				}
 				
 			}
@@ -385,7 +397,18 @@ public class FileEncrypter implements EncryptEventListener
 				if (canRun[4] == true){
 					//run here
 					System.out.println("Decrypting");
-					new Thread() { public void run() {try{encrypter.decode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));}catch(IOException e){e.printStackTrace();}}}.start();
+					new Thread(){
+						public void run() {
+							try
+							{
+								encrypter.decode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+							}
+							catch(IOException e)
+							{
+								e.printStackTrace();
+							}
+						}
+					}.start();
 				}
 				
 			}
