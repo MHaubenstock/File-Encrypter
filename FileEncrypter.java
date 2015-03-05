@@ -2,6 +2,7 @@ import java.awt.ComponentOrientation;
 import java.awt.EventQueue;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.awt.Rectangle;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -35,6 +36,7 @@ public class FileEncrypter implements EncryptEventListener
 	private JButton btn_browse_iv;
 	private JLabel lbl_iv;
 	private JTextArea tf_iv;
+	private JProgressBar progressBar;
 	private StringBuilder sb = new StringBuilder();
 	private java.io.File file;
 
@@ -402,7 +404,7 @@ public class FileEncrypter implements EncryptEventListener
 	public void initialize() {
 		frmFileEncryptionInput = new JFrame();
 		frmFileEncryptionInput.setTitle("File Encryption/Decryption Input");
-		frmFileEncryptionInput.setBounds(100, 200, 450, 300);
+		frmFileEncryptionInput.setBounds(100, 200, 450, 376);
 		frmFileEncryptionInput.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmFileEncryptionInput.getContentPane().setLayout(null);
 		
@@ -447,11 +449,11 @@ public class FileEncrypter implements EncryptEventListener
 		frmFileEncryptionInput.getContentPane().add(btn_random_iv);
 		
 		btn_encrypt = new JButton("Encrypt");
-		btn_encrypt.setBounds(88, 205, 118, 46);
+		btn_encrypt.setBounds(88, 281, 118, 46);
 		frmFileEncryptionInput.getContentPane().add(btn_encrypt);
 		
 		btn_decrypt = new JButton("Decrypt");
-		btn_decrypt.setBounds(209, 205, 118, 46);
+		btn_decrypt.setBounds(209, 281, 118, 46);
 		frmFileEncryptionInput.getContentPane().add(btn_decrypt);
 		
 		JLabel lbl_plainText = new JLabel("Plain Text");
@@ -473,5 +475,13 @@ public class FileEncrypter implements EncryptEventListener
 		tf_iv.setText("Enter 64 bit IV\r\nOr browse for file\r\nOr create random");
 		tf_iv.setBounds(128, 133, 164, 46);
 		frmFileEncryptionInput.getContentPane().add(tf_iv);
+
+		progressBar = new JProgressBar();
+		progressBar.setValue(0);
+		progressBar.setStringPainted(true);
+		Border border = BorderFactory.createTitledBorder("Processing...");
+		progressBar.setBorder(border);
+		progressBar.setBounds(88, 205, 239, 50);
+		frmFileEncryptionInput.getContentPane().add(progressBar);
 	}
 }
