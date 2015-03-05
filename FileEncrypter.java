@@ -20,7 +20,6 @@ import java.util.Scanner;
 
 public class FileEncrypter implements EncryptEventListener
 {
-
 	private JFrame frmFileEncryptionInput;
 	private JTextField tf_key1;
 	private JButton btn_key1;
@@ -494,7 +493,7 @@ public class FileEncrypter implements EncryptEventListener
 		progressBar = new JProgressBar();
 		progressBar.setValue(0);
 		progressBar.setStringPainted(true);
-		Border border = BorderFactory.createTitledBorder("Processing...");
+		Border border = BorderFactory.createTitledBorder("Ready");
 		progressBar.setBorder(border);
 		progressBar.setBounds(88, 205, 239, 50);
 		frmFileEncryptionInput.getContentPane().add(progressBar);
