@@ -3,10 +3,12 @@
 //  
 import java.io.*;
 import java.nio.file.*;
-
+import java.util.*;
 
 public class OutsideChainingMode
 {
+    private List _listeners = new ArrayList();
+
     public OutsideChainingMode()
     {    
     }
@@ -27,7 +29,7 @@ public class OutsideChainingMode
         byte[] initializationVector = DES.twoLongsTo8ByteArray(d2, d1);
 
         InputStreamReader in = new InputStreamReader(new FileInputStream(filePath), "iso-8859-1");
-        long c, count = 0;
+        long c;
 
         //Decode
         DESRound round = new DESRound();
@@ -68,17 +70,21 @@ public class OutsideChainingMode
             messageSegment = DES.decode(messageSegment, key2, round);
             messageSegment = DES.encode(messageSegment, key1, round);
 
+            //Set IV to the decrypted block for chaining
+            initializationVector = messageSegment;
+
             //Write 64 bits to the out file
             out.print(DES.byteArrayToString(messageSegment));
 
-            //Set IV to the decrypted block for chaining
-            initializationVector = messageSegment;
+            //Trigger event
+            processedData(10, 100);
         }
 
         //Close the out file
         out.close();
 
-        //return outMessage;
+        //Trigger finished event
+        finishedProcessing();
     }
 
     public void decode(String filePath, String k1, String k2, String initVector) throws IOException
@@ -108,7 +114,6 @@ public class OutsideChainingMode
         //Open print writer
         FileOutputStream out = new FileOutputStream("testoutputDecoded.txt");
 
-        //for(int x = 0; x < messageIn.length; x = x + 8)
         while ((c = in.read()) != -1)
         {
             //Reset message segment string
@@ -151,14 +156,50 @@ public class OutsideChainingMode
             //XOR with the initialization vector
             messageSegment = DES.XORByteArrays(messageSegment, initializationVector);
 
+            //Set IV to the decrypted block for chaining
+            initializationVector = tempInitVector;
+
             //Write 64 bits to the out file
             out.write(messageSegment);
 
-            //Set IV to the decrypted block for chaining
-            initializationVector = tempInitVector;
+            //Trigger event
+            processedData(10, 100);
         }
 
         //Close the out file
         out.close();
+
+        //Trigger finished event
+        finishedProcessing();
+    }
+
+    public synchronized void addEventListener(EncryptEventListener listener) 
+    {
+        _listeners.add(listener);
+    }
+
+    public synchronized void removeEventListener(EncryptEventListener listener)  
+    {
+       _listeners.remove(listener);
+    }
+
+    private synchronized void processedData(int bytesProcessed, int totalBytes)
+    {
+        Iterator i = _listeners.iterator();
+
+        while(i.hasNext())
+        {
+            ((EncryptEventListener) i.next()).processedData(bytesProcessed, totalBytes);
+        }
+    }
+
+    private synchronized void finishedProcessing()
+    {
+        Iterator i = _listeners.iterator();
+
+        while(i.hasNext())
+        {
+            ((EncryptEventListener) i.next()).finishedProcessing();
+        }
     }
 }

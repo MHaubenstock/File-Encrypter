@@ -17,7 +17,8 @@ import java.nio.file.Paths;
 import java.util.Random;
 import java.util.Scanner;
 
-public class FileEncrypter {
+public class FileEncrypter implements EncryptEventListener
+{
 
 	private JFrame frmFileEncryptionInput;
 	private JTextField tf_key1;
@@ -69,6 +70,18 @@ public class FileEncrypter {
 
 		return true;
 	}
+
+	//Handle encryption/decryption events
+	public void processedData(int bytesProcessed, int totalBytes)
+	{
+		//Update progress bar
+		System.out.println("Progress: " + ((float)bytesProcessed / totalBytes) + "%");
+	}
+
+	public void finishedProcessing()
+	{
+		System.out.println("Finished Processing");
+	}
 	
 	/**
 	 * Launch the application.
@@ -90,6 +103,10 @@ public class FileEncrypter {
 	 * Create the application.
 	 */
 	public FileEncrypter() {
+
+		//Add this instance to the list of encryption/decryption listeners
+		encrypter.addEventListener(this);
+
 		initialize();
 		//one click highlight textfield key1
 		tf_key1.addFocusListener(new FocusAdapter()
