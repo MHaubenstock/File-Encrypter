@@ -1,5 +1,6 @@
 public interface EncryptEventListener
 {
-    public void processedData(int bytesProcessed, int totalBytes);
+	public void beganProcessing();
+    public void processedData(long bytesProcessed, long totalBytes);
     public void finishedProcessing();
 }

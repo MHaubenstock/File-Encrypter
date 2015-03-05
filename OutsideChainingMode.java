@@ -15,6 +15,8 @@ public class OutsideChainingMode
 
     public void encode(String filePath, String k1, String k2, String initVector) throws IOException
     {
+        beganProcessing();
+        
         //Convert keys and initialization vector to byte arrays
         long d1 = Long.decode("0x" + k1.substring(0,8)).longValue();
         long d2 = Long.decode("0x" + k1.substring(8,16)).longValue();
@@ -29,7 +31,7 @@ public class OutsideChainingMode
         byte[] initializationVector = DES.twoLongsTo8ByteArray(d2, d1);
 
         InputStreamReader in = new InputStreamReader(new FileInputStream(filePath), "iso-8859-1");
-        long c;
+        long c, filesize = new File(filePath).length(), bytesRead = 0;
 
         //Decode
         DESRound round = new DESRound();
@@ -41,6 +43,8 @@ public class OutsideChainingMode
 
         while ((c = in.read()) != -1)
         {
+            ++bytesRead;
+
             //Reset message segment string
             messageSegString = "";
 
@@ -50,8 +54,10 @@ public class OutsideChainingMode
             for(int x = 1; x <= 7; ++x)
             {
                 if((c = in.read()) != -1)
+                {
                     messageSegString += String.format("%02x", c);
-
+                    ++bytesRead;
+                }
                 else
                 {
                     messageSegString += String.format("%02x", 32);
@@ -77,7 +83,7 @@ public class OutsideChainingMode
             out.print(DES.byteArrayToString(messageSegment));
 
             //Trigger event
-            processedData(10, 100);
+            processedData(bytesRead, filesize);
         }
 
         //Close the out file
@@ -89,6 +95,8 @@ public class OutsideChainingMode
 
     public void decode(String filePath, String k1, String k2, String initVector) throws IOException
     {
+        beganProcessing();
+
         //Convert keys and initialization vector to byte arrays
         long d1 = Long.decode("0x" + k1.substring(0,8)).longValue();
         long d2 = Long.decode("0x" + k1.substring(8,16)).longValue();
@@ -103,7 +111,7 @@ public class OutsideChainingMode
         byte[] initializationVector = DES.twoLongsTo8ByteArray(d2, d1);
 
         InputStreamReader in = new InputStreamReader(new FileInputStream(filePath), "iso-8859-1");
-        long c;
+        long c, filesize = new File(filePath).length(), bytesRead = 0;
 
         //Decode
         DESRound round = new DESRound();
@@ -116,6 +124,8 @@ public class OutsideChainingMode
 
         while ((c = in.read()) != -1)
         {
+            ++bytesRead;
+
             //Reset message segment string
             messageSegString = "";
 
@@ -129,6 +139,7 @@ public class OutsideChainingMode
                     if(Character.digit((char)c, 16) != -1)
                     {
                         messageSegString += (char)c;
+                        ++bytesRead;
                     }
                     //Else throw an IOException
                     //This is because you are reading in a decrypted file that should be all hex digits
@@ -163,7 +174,7 @@ public class OutsideChainingMode
             out.write(messageSegment);
 
             //Trigger event
-            processedData(10, 100);
+            processedData(bytesRead, filesize);
         }
 
         //Close the out file
@@ -183,7 +194,17 @@ public class OutsideChainingMode
        _listeners.remove(listener);
     }
 
-    private synchronized void processedData(int bytesProcessed, int totalBytes)
+    private synchronized void beganProcessing()
+    {
+        Iterator i = _listeners.iterator();
+
+        while(i.hasNext())
+        {
+            ((EncryptEventListener) i.next()).beganProcessing();
+        }
+    }
+
+    private synchronized void processedData(long bytesProcessed, long totalBytes)
     {
         Iterator i = _listeners.iterator();
 

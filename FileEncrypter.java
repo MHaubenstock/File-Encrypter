@@ -74,15 +74,23 @@ public class FileEncrypter implements EncryptEventListener
 	}
 
 	//Handle encryption/decryption events
-	public void processedData(int bytesProcessed, int totalBytes)
+	public void beganProcessing()
+	{
+		System.out.println("Began Processing");
+		progressBar.setBorder(BorderFactory.createTitledBorder("Processing..."));
+	}
+	
+	public void processedData(long bytesProcessed, long totalBytes)
 	{
 		//Update progress bar
-		System.out.println("Progress: " + ((float)bytesProcessed / totalBytes) + "%");
+		//System.out.println("Progress: " + (int)(((float)bytesProcessed / totalBytes) * 100) + "%");
+		progressBar.setValue((int)(((float)bytesProcessed / totalBytes) * 100));
 	}
 
 	public void finishedProcessing()
 	{
 		System.out.println("Finished Processing");
+		progressBar.setBorder(BorderFactory.createTitledBorder("Finished"));
 	}
 	
 	/**
@@ -313,15 +321,8 @@ public class FileEncrypter implements EncryptEventListener
 				
 				if (canRun[4] == true){
 					//run here
-					try
-					{
-						System.out.println("Encrypting");
-						encrypter.encode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
-					}
-					catch(IOException e)
-					{
-						e.printStackTrace();
-					}
+					System.out.println("Encrypting");
+					new Thread() { public void run() {try{encrypter.encode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));}catch(IOException e){e.printStackTrace();}}}.start();
 				}
 				
 			}
@@ -383,15 +384,8 @@ public class FileEncrypter implements EncryptEventListener
 				
 				if (canRun[4] == true){
 					//run here
-					try
-					{
-						System.out.println("Decrypting");
-						encrypter.decode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
-					}
-					catch(IOException e)
-					{
-						e.printStackTrace();
-					}
+					System.out.println("Decrypting");
+					new Thread() { public void run() {try{encrypter.decode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));}catch(IOException e){e.printStackTrace();}}}.start();
 				}
 				
 			}
