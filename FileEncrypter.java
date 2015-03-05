@@ -335,8 +335,7 @@ public class FileEncrypter implements EncryptEventListener
 							}
 						}
 					}.start();
-				}
-				
+				}	
 			}
 		});
 		
@@ -410,9 +409,8 @@ public class FileEncrypter implements EncryptEventListener
 						}
 					}.start();
 				}
-				
 			}
-				});		
+		});		
 	}
 
 	/**
