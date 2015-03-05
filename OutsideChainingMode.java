@@ -31,7 +31,7 @@ public class OutsideChainingMode
         byte[] initializationVector = DES.twoLongsTo8ByteArray(d2, d1);
 
         InputStreamReader in = new InputStreamReader(new FileInputStream(filePath), "iso-8859-1");
-        long c, filesize = new File(filePath).length(), bytesRead = 0;
+        long c, fileSize = new File(filePath).length(), bytesRead = 0;
 
         //Decode
         DESRound round = new DESRound();
@@ -39,7 +39,7 @@ public class OutsideChainingMode
         String messageSegString;
 
         //Open print writer
-        PrintWriter out = new PrintWriter("testoutputEncoded.txt");
+        FileOutputStream out = new FileOutputStream("testoutputEncoded.txt");
 
         while ((c = in.read()) != -1)
         {
@@ -80,10 +80,10 @@ public class OutsideChainingMode
             initializationVector = messageSegment;
 
             //Write 64 bits to the out file
-            out.print(DES.byteArrayToString(messageSegment));
+            out.write(messageSegment);
 
             //Trigger event
-            processedData(bytesRead, filesize);
+            processedData(bytesRead, fileSize);
         }
 
         //Close the out file
@@ -111,7 +111,7 @@ public class OutsideChainingMode
         byte[] initializationVector = DES.twoLongsTo8ByteArray(d2, d1);
 
         InputStreamReader in = new InputStreamReader(new FileInputStream(filePath), "iso-8859-1");
-        long c, filesize = new File(filePath).length(), bytesRead = 0;
+        long c, fileSize = new File(filePath).length(), bytesRead = 0;
 
         //Decode
         DESRound round = new DESRound();
@@ -129,29 +129,20 @@ public class OutsideChainingMode
             //Reset message segment string
             messageSegString = "";
 
-            messageSegString += (char)c;
+            messageSegString += String.format("%02x", c);
 
             //Already read first byte of block, now read the next seven
-            for(int x = 1; x <= 15; ++x)
+            for(int x = 1; x <= 7; ++x)
             {
                 if((c = in.read()) != -1)
-                    //If its a valid hex digit, keep processing
-                    if(Character.digit((char)c, 16) != -1)
-                    {
-                        messageSegString += (char)c;
-                        ++bytesRead;
-                    }
-                    //Else throw an IOException
-                    //This is because you are reading in a decrypted file that should be all hex digits
-                    else
-                    {
-                        //Close the out file to prevent memory leaks
-                        out.close();
-
-                        throw new IOException("The encrypted file is corrupted!");
-                    }
+                {
+                    messageSegString += String.format("%02x", c);
+                    ++bytesRead;
+                }
                 else
-                    messageSegString += "0";
+                {
+                    messageSegString += String.format("%02x", 32);
+                }
             }
 
             d1 = Long.decode("0x" + messageSegString.substring(0,8)).longValue();
@@ -174,7 +165,7 @@ public class OutsideChainingMode
             out.write(messageSegment);
 
             //Trigger event
-            processedData(bytesRead, filesize);
+            processedData(bytesRead, fileSize);
         }
 
         //Close the out file
