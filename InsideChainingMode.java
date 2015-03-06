@@ -33,6 +33,9 @@ public class InsideChainingMode extends Encrypter
         //Decode
         DESRound round = new DESRound();
         byte[] messageSegment = new byte[8];
+        byte[] interimMessageSeg = new byte[8];
+        byte[] interimMessageSeg2 = new byte[]{0, 0, 0, 0, 0, 0, 0, 0};
+        byte[] cipherSegment = new byte[]{0, 0, 0, 0, 0, 0, 0, 0};
         String messageSegString;
 
         //Open print writer
@@ -70,11 +73,21 @@ public class InsideChainingMode extends Encrypter
 
             //Triple des
             messageSegment = DES.encode(messageSegment, key1, round);
+
+            //Save segments for next link in chain
+            interimMessageSeg = messageSegment;
+            initializationVector = messageSegment;
+
             messageSegment = DES.decode(messageSegment, key2, round);
+
+            //XOR messageSegment, interimMessageSegment, and last Cipher segment
+            messageSegment = DES.XORByteArrays(DES.XORByteArrays(messageSegment, interimMessageSeg2), cipherSegment);
+
             messageSegment = DES.encode(messageSegment, key1, round);
 
             //Set IV to the decrypted block for chaining
-            initializationVector = messageSegment;
+            interimMessageSeg2 = interimMessageSeg;
+            cipherSegment = messageSegment;
 
             //Write 64 bits to the out file
             out.write(messageSegment);
@@ -113,7 +126,9 @@ public class InsideChainingMode extends Encrypter
         //Decode
         DESRound round = new DESRound();
         byte[] messageSegment = new byte[8];
-        byte[] tempInitVector;
+        byte[] tempCipherSeg;
+        byte[] tempCipherSeg2 = new byte[]{0, 0, 0, 0, 0, 0, 0, 0};
+        byte[] interimMessageSeg = new byte[]{0, 0, 0, 0, 0, 0, 0, 0};
         String messageSegString;
 
         //Open print writer
@@ -145,18 +160,23 @@ public class InsideChainingMode extends Encrypter
             d1 = Long.decode("0x" + messageSegString.substring(0,8)).longValue();
             d2 = Long.decode("0x" + messageSegString.substring(8,16)).longValue();
             messageSegment = DES.twoLongsTo8ByteArray(d2, d1);            
-            tempInitVector = messageSegment;
+            tempCipherSeg = messageSegment;
 
             //Triple des
             messageSegment = DES.decode(messageSegment, key1, round);
+            messageSegment = DES.XORByteArrays(DES.XORByteArrays(interimMessageSeg, messageSegment), tempCipherSeg2);
             messageSegment = DES.encode(messageSegment, key2, round);
+
+            interimMessageSeg = messageSegment;
+            tempCipherSeg2 = tempCipherSeg;
+
             messageSegment = DES.decode(messageSegment, key1, round);
 
             //XOR with the initialization vector
             messageSegment = DES.XORByteArrays(messageSegment, initializationVector);
 
             //Set IV to the decrypted block for chaining
-            initializationVector = tempInitVector;
+            initializationVector = interimMessageSeg;
 
             //Write 64 bits to the out file
             out.write(messageSegment);
