@@ -10,7 +10,7 @@ public class InsideChainingMode extends Encrypter
     {    
     }
 
-    public void encode(String filePath, String k1, String k2, String initVector) throws IOException
+    public void encode(String filePath, String outputPath, String k1, String k2, String initVector) throws IOException
     {
         beganProcessing();
         
@@ -39,7 +39,7 @@ public class InsideChainingMode extends Encrypter
         String messageSegString;
 
         //Open print writer
-        FileOutputStream out = new FileOutputStream("testoutputEncoded.txt");
+        FileOutputStream out = new FileOutputStream(outputPath);
 
         while ((c = in.read()) != -1)
         {
@@ -103,7 +103,7 @@ public class InsideChainingMode extends Encrypter
         finishedProcessing();
     }
 
-    public void decode(String filePath, String k1, String k2, String initVector) throws IOException
+    public void decode(String filePath, String outputPath, String k1, String k2, String initVector) throws IOException
     {
         beganProcessing();
 
@@ -132,7 +132,7 @@ public class InsideChainingMode extends Encrypter
         String messageSegString;
 
         //Open print writer
-        FileOutputStream out = new FileOutputStream("testoutputDecoded.txt");
+        FileOutputStream out = new FileOutputStream(outputPath);
 
         while ((c = in.read()) != -1)
         {

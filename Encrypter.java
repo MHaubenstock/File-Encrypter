@@ -5,8 +5,8 @@ public abstract class Encrypter
 {
 	protected List _listeners = new ArrayList();
 
-	public abstract void encode(String filePath, String k1, String k2, String initVector) throws IOException;
-	public abstract void decode(String filePath, String k1, String k2, String initVector) throws IOException;
+	public abstract void encode(String filePath, String outputPath, String k1, String k2, String initVector) throws IOException;
+	public abstract void decode(String filePath, String outputPath, String k1, String k2, String initVector) throws IOException;
 
 	public synchronized void addEventListener(EncryptEventListener listener) 
     {

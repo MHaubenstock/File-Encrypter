@@ -28,7 +28,9 @@ public class FileEncrypter implements EncryptEventListener
 	private JLabel lbl_key2;
 	private JButton btn_key2;
 	public static JTextField tf_plainText;
+	public static JTextField tf_destination;
 	private JButton btn_plainText;
+	private JButton btn_destination;
 	private JButton btn_encrypt;
 	private JButton btn_decrypt;
 	private JButton btn_random_iv;
@@ -41,6 +43,7 @@ public class FileEncrypter implements EncryptEventListener
 	private JRadioButton icmRadioButton;
 	private StringBuilder sb = new StringBuilder();
 	private java.io.File file;
+	private java.io.File outputFile;
 
 	//Instantiate the encrypter
 	private OutsideChainingMode ocmEncrypter = new OutsideChainingMode();
@@ -163,6 +166,35 @@ public class FileEncrypter implements EncryptEventListener
 				}
 				else{
 					tf_plainText.setText("File not found");
+				}
+			}
+		});
+
+		//File destination text field and browser
+		//one click highlight textfield destination
+		tf_destination.addFocusListener(new FocusAdapter()
+		{
+			public void focusGained(FocusEvent fEvt)
+			{
+				JTextField tField = (JTextField)fEvt.getSource();
+				tField.selectAll();
+			}
+		});
+		
+		//plain text browser
+		btn_destination.addActionListener(new ActionListener()
+		{	
+			public void actionPerformed(ActionEvent arg0){
+				JFileChooser fileChooser = new JFileChooser();
+				fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+
+				if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION)
+				{
+					outputFile = fileChooser.getSelectedFile();
+					tf_destination.setText(outputFile.getName());
+				}
+				else{
+					tf_destination.setText("File not found");
 				}
 			}
 		});
@@ -332,9 +364,9 @@ public class FileEncrypter implements EncryptEventListener
 							try
 							{
 								if(ocmRadioButton.isSelected())
-									ocmEncrypter.encode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+									ocmEncrypter.encode(file.getPath(), outputFile.getAbsolutePath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
 								else
-									icmEncrypter.encode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+									icmEncrypter.encode(file.getPath(), outputFile.getAbsolutePath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
 							}
 							catch(IOException e)
 							{
@@ -408,9 +440,9 @@ public class FileEncrypter implements EncryptEventListener
 							try
 							{
 								if(ocmRadioButton.isSelected())
-									ocmEncrypter.decode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+									ocmEncrypter.decode(file.getPath(), outputFile.getAbsolutePath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
 								else
-									icmEncrypter.decode(file.getPath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+									icmEncrypter.decode(file.getPath(), outputFile.getAbsolutePath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
 							}
 							catch(IOException e)
 							{
@@ -429,56 +461,56 @@ public class FileEncrypter implements EncryptEventListener
 	public void initialize() {
 		frmFileEncryptionInput = new JFrame();
 		frmFileEncryptionInput.setTitle("File Encryption/Decryption Input");
-		frmFileEncryptionInput.setBounds(100, 200, 450, 400);
+		frmFileEncryptionInput.setBounds(100, 200, 450, 423);
 		frmFileEncryptionInput.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmFileEncryptionInput.getContentPane().setLayout(null);
 		
 		lbl_key1 = new JLabel("Key 1 (hex)");
-		lbl_key1.setBounds(39, 58, 79, 14);
+		lbl_key1.setBounds(39, 81, 79, 14);
 		frmFileEncryptionInput.getContentPane().add(lbl_key1);
 		
 		tf_key1 = new JTextField();
 		tf_key1.setText("Enter key or file location");
-		tf_key1.setBounds(128, 59, 164, 20);
+		tf_key1.setBounds(128, 82, 164, 20);
 		frmFileEncryptionInput.getContentPane().add(tf_key1);
 		tf_key1.setColumns(10);
 		
 		btn_key1 = new JButton("Browse");
-		btn_key1.setBounds(302, 58, 89, 23);
+		btn_key1.setBounds(302, 81, 89, 23);
 		frmFileEncryptionInput.getContentPane().add(btn_key1);
 		
 		lbl_key2 = new JLabel("Key 2 (hex)");
-		lbl_key2.setBounds(39, 83, 79, 14);
+		lbl_key2.setBounds(39, 106, 79, 14);
 		frmFileEncryptionInput.getContentPane().add(lbl_key2);
 		
 		tf_key2 = new JTextField();
 		tf_key2.setText("Enter key or file location");
-		tf_key2.setBounds(128, 84, 164, 20);
+		tf_key2.setBounds(128, 107, 164, 20);
 		frmFileEncryptionInput.getContentPane().add(tf_key2);
 		tf_key2.setColumns(10);
 		
 		btn_key2 = new JButton("Browse");
-		btn_key2.setBounds(302, 83, 89, 23);
+		btn_key2.setBounds(302, 106, 89, 23);
 		frmFileEncryptionInput.getContentPane().add(btn_key2);
 		
 		lbl_iv = new JLabel("IV (hex)");
-		lbl_iv.setBounds(39, 135, 79, 14);
+		lbl_iv.setBounds(39, 158, 79, 14);
 		frmFileEncryptionInput.getContentPane().add(lbl_iv);
 		
 		btn_browse_iv = new JButton("Browse");
-		btn_browse_iv.setBounds(302, 131, 89, 23);
+		btn_browse_iv.setBounds(302, 154, 89, 23);
 		frmFileEncryptionInput.getContentPane().add(btn_browse_iv);
 		
 		btn_random_iv = new JButton("Random");
-		btn_random_iv.setBounds(302, 156, 89, 23);
+		btn_random_iv.setBounds(302, 179, 89, 23);
 		frmFileEncryptionInput.getContentPane().add(btn_random_iv);
 		
 		btn_encrypt = new JButton("Encrypt");
-		btn_encrypt.setBounds(88, 305, 118, 46);
+		btn_encrypt.setBounds(88, 328, 118, 46);
 		frmFileEncryptionInput.getContentPane().add(btn_encrypt);
 		
 		btn_decrypt = new JButton("Decrypt");
-		btn_decrypt.setBounds(209, 305, 118, 46);
+		btn_decrypt.setBounds(209, 328, 118, 46);
 		frmFileEncryptionInput.getContentPane().add(btn_decrypt);
 		
 		JLabel lbl_plainText = new JLabel("Plain Text");
@@ -494,27 +526,41 @@ public class FileEncrypter implements EncryptEventListener
 		btn_plainText = new JButton("Browse");
 		btn_plainText.setBounds(302, 33, 89, 23);
 		frmFileEncryptionInput.getContentPane().add(btn_plainText);
+
+		JLabel lbl_destination = new JLabel("Output Destination");
+		lbl_destination.setBounds(39, 56, 57, 14);
+		frmFileEncryptionInput.getContentPane().add(lbl_destination);
+		
+		tf_destination = new JTextField();
+		tf_destination.setText("Browse for file");
+		tf_destination.setBounds(128, 57, 164, 20);
+		frmFileEncryptionInput.getContentPane().add(tf_destination);
+		tf_destination.setColumns(10);
+		
+		btn_destination = new JButton("Browse");
+		btn_destination.setBounds(302, 56, 89, 23);
+		frmFileEncryptionInput.getContentPane().add(btn_destination);
 		
 		tf_iv = new JTextArea();
 		tf_iv.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		tf_iv.setText("Enter 64 bit IV\r\nOr browse for file\r\nOr create random");
-		tf_iv.setBounds(128, 133, 164, 46);
+		tf_iv.setBounds(128, 156, 164, 46);
 		frmFileEncryptionInput.getContentPane().add(tf_iv);
 
 		progressBar = new JProgressBar();
 		progressBar.setValue(0);
 		progressBar.setStringPainted(true);
 		progressBar.setBorder(BorderFactory.createTitledBorder("Ready"));
-		progressBar.setBounds(88, 229, 239, 50);
+		progressBar.setBounds(88, 252, 239, 50);
 		frmFileEncryptionInput.getContentPane().add(progressBar);
 
 		ocmRadioButton = new JRadioButton("Outside Chaining");
 		ocmRadioButton.setSelected(true);
-		ocmRadioButton.setBounds(59, 185, 150, 25);
+		ocmRadioButton.setBounds(59, 208, 150, 25);
 		frmFileEncryptionInput.getContentPane().add(ocmRadioButton);
 		
 		icmRadioButton = new JRadioButton("Inside Chaining");
-		icmRadioButton.setBounds(241, 185, 150, 25);
+		icmRadioButton.setBounds(241, 208, 150, 25);
 		frmFileEncryptionInput.getContentPane().add(icmRadioButton);
 
 		modeGroup = new ButtonGroup();
