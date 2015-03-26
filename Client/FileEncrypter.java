@@ -1,6 +1,7 @@
 import java.awt.ComponentOrientation;
 import java.awt.EventQueue;
-
+import java.net.*;
+import java.io.*;
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.Rectangle;
@@ -9,9 +10,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+/*
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+*/
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -45,10 +48,16 @@ public class FileEncrypter implements EncryptEventListener
 	private java.io.File file;
 	private java.io.File outputFile;
 
+	private JButton connectButton;
+
 	//Instantiate the encrypter
 	private OutsideChainingMode ocmEncrypter = new OutsideChainingMode();
 	private InsideChainingMode icmEncrypter = new InsideChainingMode();
 	
+	//For Communicating with the server
+	Socket connectSocket;
+	OutputStream toServerStream;
+
 	private String hexGenerator()
 	{
 		Random rnd = new Random();
@@ -86,11 +95,25 @@ public class FileEncrypter implements EncryptEventListener
 		progressBar.setBorder(BorderFactory.createTitledBorder("Processing..."));
 	}
 	
-	public void processedData(long bytesProcessed, long totalBytes)
+	public void processedData(byte[] bytes, long bytesProcessed, long totalBytes)
 	{
 		//Update progress bar
 		//System.out.println("Progress: " + (int)(((float)bytesProcessed / totalBytes) * 100) + "%");
 		progressBar.setValue((int)(((float)bytesProcessed / totalBytes) * 100));
+
+		try
+		{
+			//Send data to server
+			if(connectSocket != null)
+			{
+				//System.out.println("SEND");
+				toServerStream.write(bytes);//, 0, bytes.length);
+			}
+		}
+		catch(Exception e)
+		{
+
+		}
 	}
 
 	public void finishedProcessing()
@@ -452,7 +475,24 @@ public class FileEncrypter implements EncryptEventListener
 					}.start();
 				}
 			}
-		});	
+		});
+
+		//Connect button
+		connectButton.addActionListener(new ActionListener()
+		{	
+			public void actionPerformed(ActionEvent arg0)
+			{
+				try
+				{
+					connectSocket = new Socket("localhost", 8080);
+					toServerStream = connectSocket.getOutputStream();
+				}
+				catch(Exception e)
+				{
+
+				}
+			}
+		});
 	}
 
 	/**
@@ -566,5 +606,9 @@ public class FileEncrypter implements EncryptEventListener
 		modeGroup = new ButtonGroup();
 		modeGroup.add(ocmRadioButton);
 		modeGroup.add(icmRadioButton);
+
+		connectButton = new JButton("Connect");
+		connectButton.setBounds(0, 0, 118, 46);
+		frmFileEncryptionInput.getContentPane().add(connectButton);
 	}
 }

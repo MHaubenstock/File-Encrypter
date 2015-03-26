@@ -80,7 +80,7 @@ public class OutsideChainingMode extends Encrypter
             out.write(messageSegment);
 
             //Trigger event
-            processedData(bytesRead, fileSize);
+            processedData(messageSegment, bytesRead, fileSize);
         }
 
         //Close the out file
@@ -162,7 +162,7 @@ public class OutsideChainingMode extends Encrypter
             out.write(messageSegment);
 
             //Trigger event
-            processedData(bytesRead, fileSize);
+            processedData(messageSegment, bytesRead, fileSize);
         }
 
         //Close the out file

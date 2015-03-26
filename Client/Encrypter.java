@@ -28,13 +28,13 @@ public abstract class Encrypter
         }
     }
 
-    protected synchronized void processedData(long bytesProcessed, long totalBytes)
+    protected synchronized void processedData(byte[] bytes, long bytesProcessed, long totalBytes)
     {
         Iterator i = _listeners.iterator();
 
         while(i.hasNext())
         {
-            ((EncryptEventListener) i.next()).processedData(bytesProcessed, totalBytes);
+            ((EncryptEventListener) i.next()).processedData(bytes, bytesProcessed, totalBytes);
         }
     }
 
