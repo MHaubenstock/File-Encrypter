@@ -44,19 +44,17 @@ public class FileEncrypter implements EncryptEventListener
 	private ButtonGroup modeGroup;
 	private JRadioButton ocmRadioButton;
 	private JRadioButton icmRadioButton;
+	private JButton connectButton;
 	private StringBuilder sb = new StringBuilder();
 	private java.io.File file;
 	private java.io.File outputFile;
-
-	private JButton connectButton;
 
 	//Instantiate the encrypter
 	private OutsideChainingMode ocmEncrypter = new OutsideChainingMode();
 	private InsideChainingMode icmEncrypter = new InsideChainingMode();
 	
 	//For Communicating with the server
-	Socket connectSocket;
-	OutputStream toServerStream;
+	private ClientMessageHandler messageHandler;
 
 	private String hexGenerator()
 	{
@@ -93,6 +91,8 @@ public class FileEncrypter implements EncryptEventListener
 	{
 		System.out.println("Began Processing");
 		progressBar.setBorder(BorderFactory.createTitledBorder("Processing..."));
+
+
 	}
 	
 	public void processedData(byte[] bytes, long bytesProcessed, long totalBytes)
@@ -104,10 +104,10 @@ public class FileEncrypter implements EncryptEventListener
 		try
 		{
 			//Send data to server
-			if(connectSocket != null)
+			if(messageHandler != null)
 			{
 				//System.out.println("SEND");
-				toServerStream.write(bytes);//, 0, bytes.length);
+				//toServerStream.write(bytes);//, 0, bytes.length);
 			}
 		}
 		catch(Exception e)
@@ -482,14 +482,11 @@ public class FileEncrypter implements EncryptEventListener
 		{	
 			public void actionPerformed(ActionEvent arg0)
 			{
-				try
+				if(messageHandler == null)
 				{
-					connectSocket = new Socket("localhost", 8080);
-					toServerStream = connectSocket.getOutputStream();
-				}
-				catch(Exception e)
-				{
-
+					//Start thread to listen for initialization requests from the server
+					messageHandler = new ClientMessageHandler("localhost", 8080);
+					messageHandler.start();
 				}
 			}
 		});

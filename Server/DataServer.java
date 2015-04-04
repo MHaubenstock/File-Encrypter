@@ -1,14 +1,33 @@
 import java.io.*;
 import java.net.*;
+import java.util.concurrent.Callable;
 
 //Serves a single connection between two clients
-private class DataServer
+public class DataServer implements Callable
 {
-	ServerSocket dataSocket;
+	Socket socket;
 
-	public DataServer(int portNum)
+	public DataServer(Socket socket)
 	{
 		//Open socket on new port
-		dataSocket = new ServerSocket(portNumber);
+		this.socket = socket;
 	}
+
+	@Override
+    public Object call() throws Exception
+    {
+    	System.out.println("Connected");
+
+    	BufferedInputStream inStream = new BufferedInputStream(socket.getInputStream());
+
+		while(!socket.isClosed())
+		{
+	    	//if(inStream.available() > 0)
+	        System.out.println(inStream.read());
+		}
+
+		System.out.println("Disconnected");
+
+    	return null;
+    }
 }

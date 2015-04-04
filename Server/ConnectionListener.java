@@ -1,8 +1,10 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class ConnectionListener extends Thread
+public class ConnectionManager extends Thread
 {
 	private int port;
 	protected List _listeners = new ArrayList();
@@ -30,12 +32,18 @@ public class ConnectionListener extends Thread
 
 	private void listen() throws IOException
 	{
-		ServerSocket listenerServerSocket = new ServerSocket(port);
-		Socket listenerSocket = listenerServerSocket.accept();
-		
-		System.out.println("Connected");
+		ServerSocket listenerServerSocket = new ServerSocket(port);;// = new ServerSocket(port);
+		Socket listenerSocket;// = listenerServerSocket.accept();
+		int numOfConnections = 0;
 
-		recievedRequestForPrivateConnection();
+		while(++numOfConnections < 10)
+		{
+			listenerSocket = listenerServerSocket.accept();
+
+			System.out.println("Connected");
+
+			recievedRequestForPrivateConnection();
+		}
 
 		listenerServerSocket.close();
 
