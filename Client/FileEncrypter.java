@@ -45,6 +45,7 @@ public class FileEncrypter implements EncryptEventListener
 	private JRadioButton ocmRadioButton;
 	private JRadioButton icmRadioButton;
 	private JButton connectButton;
+	private JButton quitButton;
 	private StringBuilder sb = new StringBuilder();
 	private java.io.File file;
 	private java.io.File outputFile;
@@ -55,6 +56,16 @@ public class FileEncrypter implements EncryptEventListener
 	
 	//For Communicating with the server
 	private ClientMessageHandler messageHandler;
+
+	private void pingServer()
+	{
+		//Ping the server
+		if(messageHandler != null)
+		{
+			System.out.println("Pinging the server");
+			messageHandler.pingServer();
+		}
+	}
 
 	private String hexGenerator()
 	{
@@ -123,9 +134,10 @@ public class FileEncrypter implements EncryptEventListener
 	}
 	
 	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
+	* Launch the application.
+	*/
+	public static void main(String[] args)
+	{
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
@@ -141,7 +153,38 @@ public class FileEncrypter implements EncryptEventListener
 	/**
 	 * Create the application.
 	 */
-	public FileEncrypter() {
+	public FileEncrypter()
+	{
+		//Add shutdown hook
+		//final Thread mainThread = Thread.currentThread();
+		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable()
+		{
+	        public void run()
+	        {
+	        	System.out.println("In shutdown hook");
+
+            	//Tell server you're disconnection and close the socket
+            	if(!(messageHandler == null))
+            		messageHandler.disconnectFromServer();
+	        	/*
+	        	try
+	        	{
+	            	System.out.println("In shutdown hook");
+
+	            	//Main thread will not exit before this one does
+	            	//mainThread.join();
+
+	            	//Tell server you're disconnection and close the socket
+	            	if(!(messageHandler == null))
+	            		messageHandler.disconnectFromServer();
+	            }
+	            catch(InterruptedException e)
+	            {
+	            	e.printStackTrace();
+	            }
+	            */
+	        }
+    	}, "Shutdown-thread"));
 
 		//Add this instance to the list of encryption/decryption listeners
 		ocmEncrypter.addEventListener(this);
@@ -340,6 +383,9 @@ public class FileEncrypter implements EncryptEventListener
 				JTextField[] fields = new JTextField[2];
 				fields[0] = tf_key1;
 				fields[1] = tf_key2;
+
+				////TAKE THIS OUT WHEN YOU'RE DONE TESTING IT!
+				pingServer();
 								
 				//text view checking keys
 				for (int i = 0; i < 2; i++){
@@ -493,8 +539,8 @@ public class FileEncrypter implements EncryptEventListener
 	}
 
 	/**
-	 * Initialize the contents of the frame.
-	 */
+	* Initialize the contents of the frame.
+	*/
 	public void initialize() {
 		frmFileEncryptionInput = new JFrame();
 		frmFileEncryptionInput.setTitle("File Encryption/Decryption Input");

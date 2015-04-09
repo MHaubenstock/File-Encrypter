@@ -8,34 +8,48 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.security.SecureRandom;
 import java.math.BigInteger;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.ParseException;
+import org.json.simple.parser.JSONParser;
 
 //Manages the connection between clients
 public class ConnectionManager
 {
 	//For event listener
-	protected List _listeners = new ArrayList();
+	protected List _listeners;
+    ExecutorService executorService;
+    Map<String, ClientConnection> clientDictionary;
 
-    ExecutorService executorService = Executors.newFixedThreadPool(100);
-    
-    Map<String, Socket> clientDictionary = new HashMap<String, Socket>();
-
-	public static void main(String[] args)
-	{
-		ConnectionManager manager = new ConnectionManager();
-		manager.listenForConnections();
-	}
+    //Network stuff
+    private ServerSocket serverSocket;
+    private LinkedBlockingQueue<Object> messages;
 
 	public ConnectionManager()
 	{
-		
+		_listeners = new ArrayList();
+		executorService = Executors.newFixedThreadPool(100);
+		clientDictionary = new HashMap<String, ClientConnection>();
+		messages = new LinkedBlockingQueue<Object>();
 	}
 
-	public void listenForConnections()
+	public void startListeningForConnections()
 	{
-		ServerSocket serverSocket = null;
-		Socket socket;
+		new Thread()
+		{
+			public void run()
+			{
+				listenForConnections();
+			}
+		}.start();
+	}
+
+	private void listenForConnections()
+	{
+		ClientConnection connection;
 
 		Boolean acceptMoreConnections = true;
     	String sessionID;
@@ -53,41 +67,23 @@ public class ConnectionManager
             while(acceptMoreConnections)
             {
             	//Listen for a new connection
-                socket = serverSocket.accept();
+                connection = new ClientConnection(serverSocket.accept(), sessionID = new BigInteger(130, sessionIDGenerator).toString(32));
                 System.out.println("Received connection");
 
-                //Get the new connection's reader and writer streams
-                socketReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                socketWriter = new PrintWriter(socket.getOutputStream(), true);
+                //Save client in the dictonary
+				clientDictionary.put(sessionID, connection);
 
-                //Create and send session id
-                sessionID = new BigInteger(130, sessionIDGenerator).toString(32);;
-        		sendMessage(sessionID, socketWriter);
-        		System.out.println("Sent session ID: " + sessionID);
-
-        		//Send opened connection event with name of connection (session ID for now)
+				//Send opened connection event with name of connection (session ID for now)
         		openedConnection(sessionID);
 
-        		//Wait for acknowledgment
-        		System.out.println("Waiting for acknowledgment");
-        		request = readMessage(socketReader);
+        		//Build json payload for initializing this client
+        		JSONObject obj = new JSONObject();
+        		obj.put("command", "initialize");
+        		obj.put("sessionID", sessionID);
 
-				if(request.equals("Ack"))
-					System.out.println("Session ID Acknowledged");
-
-                //Save client in the dictonary
-				clientDictionary.put(sessionID, socket);
-
-				//Tell client it's "good to go"
-				sendMessage("You're good to go!", socketWriter);
-        		System.out.println("Told client they are good to go");
-
-        		//Close the socket reader and writer
-        		socketReader.close();
-        		socketWriter.close();
-
-                //Execute the Data Server service
-                //executorService.submit(new DataServer(socket));
+				//Tell client its sessionID to let it know it's connected
+				sendToOne(connection, obj);
+				//DataServer test = new DataServer(connection);
             }
         }
         catch (IOException exp)
@@ -104,31 +100,36 @@ public class ConnectionManager
             {
             }
             
-            executorService.shutdownNow();
+            //executorService.shutdownNow();
         }
 	}
 
-	private String readMessage(BufferedReader socketReader) throws IOException
+	public void startListeningForMessages()
 	{
-		StringBuilder readStringBuilder = new StringBuilder();
-		String readString;
-
-		while(!socketReader.ready());
-
-		while((readString = socketReader.readLine()) != null)
+		new Thread()
 		{
-	    	readStringBuilder.append(readString);
-
-	    	if(!socketReader.ready())
-	    		break;
-		}
-
-		return readStringBuilder.toString();
+			public void run()
+			{
+				listenForMessages();
+			}
+		}.start();
 	}
 
-	private void sendMessage(String message, PrintWriter socketWriter) throws IOException
+	private void listenForMessages()
 	{
-		socketWriter.println(message);
+		while(true)
+		{
+			try
+			{
+				Object message = messages.take();
+				
+				//Handle the message
+				handleMessage(message);
+
+				System.out.println("Message Received: " + message);
+			}
+			catch(InterruptedException e){ e.printStackTrace(); }
+		}
 	}
 
 	public synchronized void addEventListener(ConnectionManagerEventListener listener) 
@@ -150,4 +151,195 @@ public class ConnectionManager
             ((ConnectionManagerEventListener) i.next()).openedConnection(connectionName);
         }
     }
+
+    protected void receivedRequestForPrivateConnection(String requestor, String requestee)
+    {
+    	Iterator i = _listeners.iterator();
+
+        while(i.hasNext())
+        {
+            ((ConnectionManagerEventListener) i.next()).receivedRequestForPrivateConnection(requestor, requestee);
+        }
+    }
+
+    public void sendToOne(ClientConnection clientConnection, Object message)
+    {
+    	clientConnection.sendMessage(message);
+    }
+
+    public void sendToAll(Object message)
+    {
+    	Iterator<Map.Entry<String, ClientConnection>> it = clientDictionary.entrySet().iterator();
+		        
+        while (it.hasNext())
+        {
+            Map.Entry connection = (Map.Entry<String, ClientConnection>)it.next();
+            
+            ((ClientConnection)connection).sendMessage(message);
+        }
+    }
+
+    private void handleMessage(Object messageObject)
+    {
+    	JSONParser parser = new JSONParser();
+    	JSONObject message = new JSONObject();
+    	ClientConnection client = null;
+    	JSONObject response;
+
+    	try
+    	{
+    		message = (JSONObject)parser.parse(messageObject.toString());
+    		client = clientDictionary.get(message.get("sessionID"));
+    	}
+    	catch(Exception e)
+    	{
+    		e.printStackTrace();
+    	}
+
+    	//If no client was found then return
+    	if(client == null)
+    	{
+    		System.out.println("No client found!");
+    		return;
+    	}
+
+    	switch((String)message.get("command"))
+    	{
+    		case "ping":
+    			//Respond with a pong
+    			System.out.println("Server was pinged, responding....");
+
+    			response = new JSONObject();
+    			response.put("command", "pong");
+    			response.put("sessionID", message.get("sessionID"));
+
+    			sendToOne(client, response);
+
+
+    			break;
+
+    		case "initialized":
+    			//Set this client to initialized
+    			client.initialized = true;
+
+
+    			break;
+
+    		case "disconnect":
+    			//Send response telling client it is being disconnected
+    			response = new JSONObject();
+    			response.put("command", "disconnecting");
+    			response.put("sessionID", message.get("sessionID"));
+
+    			sendToOne(client, response);
+
+    			client.disconnect();
+    			clientDictionary.remove(client);
+
+    			break;
+    	}
+    }
+
+    private class ClientConnection
+	{
+		Boolean initialized = false;
+		String sessionID;
+		Thread readMessage;
+
+		Socket socket;
+
+		BufferedReader socketReader;
+	    PrintWriter socketWriter;
+
+		public ClientConnection(Socket socket, String sessionID) throws IOException
+		{
+			this.socket = socket;
+			this.sessionID = sessionID;
+
+			socketReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			socketWriter = new PrintWriter(socket.getOutputStream(), true);
+
+			readMessage = new Thread()
+			{
+	            public void run()
+	            {
+	                while(!Thread.interrupted())
+	                {
+	                	try
+	                    {
+	                        Object message = socketReader.readLine();
+	                        
+	                        if(!(message == null))
+	                        	messages.put(message);
+	                    }
+	                    catch(Exception e)
+	                    {
+	                    	e.printStackTrace();
+	                    }
+	                }
+
+	                //This is ran when the client is disconnected after the disconnect() method is called
+	                try
+					{
+						socket.close();
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+	            }
+	        };
+
+	        readMessage.setDaemon(true);	//Terminate when main thread ends
+	        readMessage.start();
+		}
+
+		private void sendMessage(Object message)
+		{
+			try
+			{
+				socketWriter.println(message);
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		private void disconnect()
+		{
+			readMessage.interrupt();
+		}
+	}
+/*
+	//Facilitates a connection between two clients
+	public class DataServer implements Callable
+	{
+		Socket socket;
+
+		public DataServer(ClientConnection socket)
+		{
+			//Open socket on new port
+			this.socket = socket;
+		}
+
+		@Override
+	    public Object call() throws Exception
+	    {
+	    	System.out.println("Connected");
+
+	    	BufferedInputStream inStream = new BufferedInputStream(socket.getInputStream());
+
+			while(!socket.isClosed())
+			{
+		    	//if(inStream.available() > 0)
+		        System.out.println(inStream.read());
+			}
+
+			System.out.println("Disconnected");
+
+	    	return null;
+	    }
+	}
+	*/
 }

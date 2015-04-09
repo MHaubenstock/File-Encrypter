@@ -21,9 +21,18 @@ public class ConnectionManagerMain implements ConnectionManagerEventListener
 
 	public void openedConnection(String connectionName)
 	{
-		System.out.println("TEST: " + connectionName);
+		System.out.println("Connected with: " + connectionName);
+
 		//Add connection to list
 		connectionsModel.addElement(connectionName);
+
+		//We have at least one connection so start listening for requests
+		manager.startListeningForMessages();
+	}
+
+	public void receivedRequestForPrivateConnection(String requestor, String requestee)
+	{
+
 	}
 
 	/**
@@ -59,13 +68,7 @@ public class ConnectionManagerMain implements ConnectionManagerEventListener
 		initialize();
 
 		//Start connection listener
-		new Thread()
-		{
-			public void run()
-			{
-				manager.listenForConnections();
-			}
-		}.start();
+		manager.startListeningForConnections();
 	}
 
 	/**
