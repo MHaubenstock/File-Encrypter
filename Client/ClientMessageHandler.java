@@ -146,10 +146,24 @@ public class ClientMessageHandler extends Thread
 		sendMessageToServer(obj);
 	}
 
-	public void sendFileToPeer(String peer)
+	public void sendFileToPeer(String peer, String fileName, String k1, String k2, String iv)
 	{
-		
+		JSONObject obj = new JSONObject();
+
+		obj.put("command", "sendfile");
+		obj.put("peer", peer);
+		obj.put("filename", fileName);
+		obj.put("k1", k1);
+		obj.put("k2", k2);
+		obj.put("iv", iv);
+
+		sendMessageToServer()
 	}
+
+	private void acceptIncomingFile()
+    {
+
+    }
 
 	public void makeConnectionToClient(String peerSessionID)
 	{
@@ -227,16 +241,6 @@ public class ClientMessageHandler extends Thread
 
     			break;
 
-    		case "connectionrequest":
-
-    			//Respond with confirmation or denial
-    			response = new JSONObject();
-    			response.put("command", "connectionconfirmation");
-    			//(String)message.get("sessionID")
-
-    			break;
-
-
     		case "peerlist":
 
     			Object[] peerList = ((JSONArray)parser.parse(message.get("peers").toString())).toArray();
@@ -268,11 +272,6 @@ public class ClientMessageHandler extends Thread
 
     			break;
     	}
-    }
-
-    private void acceptIncomingFile()
-    {
-
     }
 
     public Boolean isConnected()

@@ -237,6 +237,13 @@ public class ConnectionManager
 
     			break;
 
+
+    		case "":
+    			
+
+    			break;
+
+
     		case "disconnect":
     			//Send response telling client it is being disconnected
     			response = new JSONObject();
