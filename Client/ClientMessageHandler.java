@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
@@ -8,6 +9,9 @@ import org.json.simple.parser.JSONParser;
 
 public class ClientMessageHandler extends Thread
 {
+	//For event listener
+	protected List _listeners = new ArrayList();;
+
 	private Socket connectedSocket;
 	private LinkedBlockingQueue<Object> messages;
 	//private OutputStream socketWriter;
@@ -16,9 +20,20 @@ public class ClientMessageHandler extends Thread
 
 	private String sessionID;
 	private Boolean initialized = false;
+	private Boolean connected = false;
+
+	//Threads
+	Thread readMessage;
+	Thread messageHandling;
+
+	public ClientMessageHandler()
+	{
+
+	}
 
 	public ClientMessageHandler(String ip, int port)
 	{
+		//Connect to server
 		try
 		{
 			connectedSocket = new Socket(ip, port);
@@ -29,25 +44,56 @@ public class ClientMessageHandler extends Thread
 		catch(Exception e)
 		{
 			e.printStackTrace();
+		}	
+	}
+
+	public void connect(String ip, int port)
+	{
+		//Connect to server
+		try
+		{
+			connectedSocket = new Socket(ip, port);
+			socketWriter = new PrintWriter(connectedSocket.getOutputStream(), true);
+			socketReader = new BufferedReader(new InputStreamReader(connectedSocket.getInputStream()));
+			messages = new LinkedBlockingQueue<Object>();
+
+			connected = true;
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
 		}
 	}
 
 	public void run()
 	{
 		//Start listening for messages
-		Thread readMessage = new Thread()
+		readMessage = new Thread()
         {
             public void run()
             {
-                while(true)
+                while(!Thread.currentThread().isInterrupted())
                 {
                     try
                     {
                         Object message = socketReader.readLine();
-                        messages.put(message);
+
+                        if(!(message == null))
+                        	messages.put(message);
                     }
-                    catch(Exception e){ e.printStackTrace(); }
+                    catch(InterruptedException e)
+                    {
+                    	Thread.currentThread().interrupt();
+                    }
+                    catch(Exception e) { e.printStackTrace(); }
                 }
+
+                //Close the socket, severing the connection
+				try
+				{
+					connectedSocket.close();
+				}
+				catch(Exception e) { e.printStackTrace(); }
             }
         };
 
@@ -56,21 +102,32 @@ public class ClientMessageHandler extends Thread
 
 
 		//Start message handler
-		Thread messageHandling = new Thread()
+		messageHandling = new Thread()
 		{
             public void run()
             {
-                while(true)
+                while(!Thread.currentThread().interrupted())
                 {
                     try
                     {
                         Object message = messages.take();
 						
-                        handleMessage(message);
+						try
+						{
+                        	handleMessage(message);
+                        }
+                        catch(Exception e)
+                        {
+                        	e.printStackTrace();
+                        }
 
                         System.out.println("Message Received: " + message);
                     }
-                    catch(Exception e){ e.printStackTrace(); }
+                    catch(InterruptedException e)
+                    {
+                    	Thread.currentThread().interrupt();
+                    }
+                    catch(Exception e) { e.printStackTrace(); }
                 }
             }
         };
@@ -85,6 +142,20 @@ public class ClientMessageHandler extends Thread
 
 		JSONObject obj = new JSONObject();
 		obj.put("command", "ping");
+
+		sendMessageToServer(obj);
+	}
+
+	public void sendFileToPeer(String peer)
+	{
+		
+	}
+
+	public void makeConnectionToClient(String peerSessionID)
+	{
+		JSONObject obj = new JSONObject();
+		obj.put("command", "makeconnection");
+		obj.put("peer", peerSessionID);
 
 		sendMessageToServer(obj);
 	}
@@ -112,22 +183,23 @@ public class ClientMessageHandler extends Thread
 		obj.put("command", "disconnect");
 		obj.put("sessionID", sessionID);
 
+		//Send disconnecting message
 		sendMessageToServer(obj);
+
+		//Stop message reading threads
+		readMessage.interrupt();
+		messageHandling.interrupt();
+
+		connected = false;
 	}
 
-	private void handleMessage(Object messageObject)
+	private void handleMessage(Object messageObject) throws Exception
     {
     	JSONParser parser = new JSONParser();
     	JSONObject message = new JSONObject();
+    	JSONObject response;
 
-    	try
-    	{
-    		message = (JSONObject)parser.parse(messageObject.toString());
-    	}
-    	catch(Exception e)
-    	{
-    		e.printStackTrace();
-    	}
+   		message = (JSONObject)parser.parse(messageObject.toString());
 
     	switch((String)message.get("command"))
     	{
@@ -144,20 +216,98 @@ public class ClientMessageHandler extends Thread
     			sessionID = (String)message.get("sessionID");
 
     			//Respond with confirmation of initialization
-    			JSONObject response = new JSONObject();
+    			response = new JSONObject();
     			response.put("command", "initialized");
 
     			//Set client to initialized
     			initialized = true;
 
+    			sendMessageToServer(response);
+
 
     			break;
 
+    		case "connectionrequest":
+
+    			//Respond with confirmation or denial
+    			response = new JSONObject();
+    			response.put("command", "connectionconfirmation");
+    			//(String)message.get("sessionID")
+
+    			break;
+
+
+    		case "peerlist":
+
+    			Object[] peerList = ((JSONArray)parser.parse(message.get("peers").toString())).toArray();
+
+    			receivedPeerList(peerList);
+
+    			break;
+
+
+    		case "incomingfile":
+
+
+
+    			break;
+
+    		//This is the server telling the client that the server is about to stop running
+    		//and that the client should perform necessary disconnecting procedures
+    		case "disconnect":
+
+    			connected = false;
+
+    			break;
+
+    		//Called from the server as confirmation of the client disconnecting
+    		//The client should be disconnected at this point so this code should never be ran
     		case "disconnecting":
-    			
+
+    			connected = false;
 
     			break;
     	}
+    }
+
+    private void acceptIncomingFile()
+    {
+
+    }
+
+    public Boolean isConnected()
+    {
+    	return connected;
+    }
+
+    public synchronized void addEventListener(MessageEventListener listener) 
+    {
+        _listeners.add(listener);
+    }
+
+    public synchronized void removeEventListener(MessageEventListener listener)  
+    {
+       _listeners.remove(listener);
+    }
+
+    protected void connectedToServer()
+    {
+    	Iterator i = _listeners.iterator();
+
+        while(i.hasNext())
+        {
+            ((MessageEventListener) i.next()).connectedToServer();
+        }
+    }
+
+    protected void receivedPeerList(Object[] peerList)
+    {
+    	Iterator i = _listeners.iterator();
+
+        while(i.hasNext())
+        {
+            ((MessageEventListener) i.next()).receivedPeerList(peerList);
+        }
     }
 }
 

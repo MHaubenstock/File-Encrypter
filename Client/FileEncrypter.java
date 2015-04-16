@@ -2,6 +2,7 @@ import java.awt.ComponentOrientation;
 import java.awt.EventQueue;
 import java.net.*;
 import java.io.*;
+import java.util.*;
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.Rectangle;
@@ -10,18 +11,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-/*
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-*/
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Random;
 import java.util.Scanner;
 
-public class FileEncrypter implements EncryptEventListener
+public class FileEncrypter implements EncryptEventListener, MessageEventListener
 {
 	private JFrame frmFileEncryptionInput;
 	private JTextField tf_key1;
@@ -45,7 +41,10 @@ public class FileEncrypter implements EncryptEventListener
 	private JRadioButton ocmRadioButton;
 	private JRadioButton icmRadioButton;
 	private JButton connectButton;
+	private JButton disconnectButton;
 	private JButton quitButton;
+	private DefaultListModel peerListModel;
+	private JList<String> peerList;
 	private StringBuilder sb = new StringBuilder();
 	private java.io.File file;
 	private java.io.File outputFile;
@@ -55,12 +54,12 @@ public class FileEncrypter implements EncryptEventListener
 	private InsideChainingMode icmEncrypter = new InsideChainingMode();
 	
 	//For Communicating with the server
-	private ClientMessageHandler messageHandler;
+	private ClientMessageHandler messageHandler = new ClientMessageHandler();
 
 	private void pingServer()
 	{
 		//Ping the server
-		if(messageHandler != null)
+		if(messageHandler.isConnected())
 		{
 			System.out.println("Pinging the server");
 			messageHandler.pingServer();
@@ -115,7 +114,7 @@ public class FileEncrypter implements EncryptEventListener
 		try
 		{
 			//Send data to server
-			if(messageHandler != null)
+			if(messageHandler.isConnected())
 			{
 				//System.out.println("SEND");
 				//toServerStream.write(bytes);//, 0, bytes.length);
@@ -132,7 +131,23 @@ public class FileEncrypter implements EncryptEventListener
 		System.out.println("Finished Processing");
 		progressBar.setBorder(BorderFactory.createTitledBorder("Finished"));
 	}
+
+	public void connectedToServer()
+	{
+		System.out.println("Connected to server");
+	}
 	
+	public void receivedPeerList(Object[] peerList)
+	{
+		System.out.println("Peer list: " + peerList);
+
+		//Clear the peer list
+		peerListModel.clear();
+
+		for(Object peer : peerList)
+			peerListModel.addElement((String)peer);
+	}
+
 	/**
 	* Launch the application.
 	*/
@@ -155,8 +170,16 @@ public class FileEncrypter implements EncryptEventListener
 	 */
 	public FileEncrypter()
 	{
+		/*
+		final JOptionPane optionPane = new JOptionPane(
+	    "The only way to close this dialog is by\n"
+	    + "pressing one of the following buttons.\n"
+	    + "Do you understand?",
+	    JOptionPane.QUESTION_MESSAGE,
+	    JOptionPane.YES_NO_OPTION);
+		*/
+		
 		//Add shutdown hook
-		//final Thread mainThread = Thread.currentThread();
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable()
 		{
 	        public void run()
@@ -166,29 +189,15 @@ public class FileEncrypter implements EncryptEventListener
             	//Tell server you're disconnection and close the socket
             	if(!(messageHandler == null))
             		messageHandler.disconnectFromServer();
-	        	/*
-	        	try
-	        	{
-	            	System.out.println("In shutdown hook");
-
-	            	//Main thread will not exit before this one does
-	            	//mainThread.join();
-
-	            	//Tell server you're disconnection and close the socket
-	            	if(!(messageHandler == null))
-	            		messageHandler.disconnectFromServer();
-	            }
-	            catch(InterruptedException e)
-	            {
-	            	e.printStackTrace();
-	            }
-	            */
 	        }
     	}, "Shutdown-thread"));
 
 		//Add this instance to the list of encryption/decryption listeners
 		ocmEncrypter.addEventListener(this);
 		icmEncrypter.addEventListener(this);
+
+		//Add this instance to list of message handling listeners
+		messageHandler.addEventListener(this);
 
 		initialize();
 		//one click highlight textfield key1
@@ -528,15 +537,29 @@ public class FileEncrypter implements EncryptEventListener
 		{	
 			public void actionPerformed(ActionEvent arg0)
 			{
-				if(messageHandler == null)
+				//Connect to the server
+				messageHandler.connect("localhost", 8080);
+				//Start thread to listen for initialization requests from the server
+				messageHandler.start();
+			}
+		});
+
+		//Disconnect button
+		disconnectButton.addActionListener(new ActionListener()
+		{	
+			public void actionPerformed(ActionEvent arg0)
+			{
+				if(messageHandler.isConnected())
 				{
-					//Start thread to listen for initialization requests from the server
-					messageHandler = new ClientMessageHandler("localhost", 8080);
-					messageHandler.start();
+					messageHandler.disconnectFromServer();
+					messageHandler = new ClientMessageHandler();
+					peerListModel.clear();
 				}
 			}
 		});
 	}
+
+
 
 	/**
 	* Initialize the contents of the frame.
@@ -544,7 +567,7 @@ public class FileEncrypter implements EncryptEventListener
 	public void initialize() {
 		frmFileEncryptionInput = new JFrame();
 		frmFileEncryptionInput.setTitle("File Encryption/Decryption Input");
-		frmFileEncryptionInput.setBounds(100, 200, 450, 423);
+		frmFileEncryptionInput.setBounds(100, 200, 750, 423);
 		frmFileEncryptionInput.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmFileEncryptionInput.getContentPane().setLayout(null);
 		
@@ -651,7 +674,16 @@ public class FileEncrypter implements EncryptEventListener
 		modeGroup.add(icmRadioButton);
 
 		connectButton = new JButton("Connect");
-		connectButton.setBounds(0, 0, 118, 46);
+		connectButton.setBounds(471, 34, 118, 46);
 		frmFileEncryptionInput.getContentPane().add(connectButton);
+
+		disconnectButton = new JButton("Disconnect");
+		disconnectButton.setBounds(611, 34, 118, 46);
+		frmFileEncryptionInput.getContentPane().add(disconnectButton);
+
+		peerListModel = new DefaultListModel();
+		peerList = new JList<String>(peerListModel);
+		peerList.setBounds(471, 90, 258, 200);
+		frmFileEncryptionInput.getContentPane().add(peerList);
 	}
 }

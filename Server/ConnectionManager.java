@@ -83,7 +83,6 @@ public class ConnectionManager
 
 				//Tell client its sessionID to let it know it's connected
 				sendToOne(connection, obj);
-				//DataServer test = new DataServer(connection);
             }
         }
         catch (IOException exp)
@@ -152,6 +151,16 @@ public class ConnectionManager
         }
     }
 
+    protected void closedConnection(String connectionName)
+    {
+    	Iterator i = _listeners.iterator();
+
+        while(i.hasNext())
+        {
+            ((ConnectionManagerEventListener) i.next()).closedConnection(connectionName);
+        }
+    }
+
     protected void receivedRequestForPrivateConnection(String requestor, String requestee)
     {
     	Iterator i = _listeners.iterator();
@@ -169,14 +178,8 @@ public class ConnectionManager
 
     public void sendToAll(Object message)
     {
-    	Iterator<Map.Entry<String, ClientConnection>> it = clientDictionary.entrySet().iterator();
-		        
-        while (it.hasNext())
-        {
-            Map.Entry connection = (Map.Entry<String, ClientConnection>)it.next();
-            
-            ((ClientConnection)connection).sendMessage(message);
-        }
+    	for(ClientConnection connection : clientDictionary.values())            
+            connection.sendMessage(message);
     }
 
     private void handleMessage(Object messageObject)
@@ -222,6 +225,15 @@ public class ConnectionManager
     			//Set this client to initialized
     			client.initialized = true;
 
+    			//Send the client a peer list
+    			//sendPeerList(client);
+    			sendPeerListToAll();
+
+    			break;
+
+    		case "fetchpeerlist":
+
+    			sendPeerList(client);
 
     			break;
 
@@ -234,10 +246,63 @@ public class ConnectionManager
     			sendToOne(client, response);
 
     			client.disconnect();
-    			clientDictionary.remove(client);
+    			clientDictionary.remove(client.sessionID);
+    			closedConnection(message.get("sessionID").toString());
+
+    			//Send updated peer list
+    			sendPeerListToAll();
 
     			break;
     	}
+    }
+
+    private void sendPeerListToAll()
+    {
+    	JSONObject response = new JSONObject();
+		response.put("command", "peerlist");
+
+		ArrayList peerList;
+
+		for(ClientConnection peerToSendTo : clientDictionary.values())
+		{
+			response.put("sessionID", peerToSendTo.sessionID);
+
+			//Create peer list minus the client asking for the list
+			peerList = new ArrayList();
+
+			for(ClientConnection peer : clientDictionary.values())
+			{ 		
+	            //If this isn't the client the peer list is being sent to
+	            if(!peerToSendTo.sessionID.equals(peer.sessionID))
+	            	//Add this client to he peer list
+	            	peerList.add(peer.sessionID);
+	        }
+
+			response.put("peers", peerList);
+			sendToOne(peerToSendTo, response);
+		}
+    }
+
+    private void sendPeerList(ClientConnection client)
+    {
+    	JSONObject response = new JSONObject();
+		response.put("command", "peerlist");
+		response.put("sessionID", client.sessionID);
+
+		//Create peer list minus the client asking for the list
+		ArrayList peerList = new ArrayList();
+
+		for(ClientConnection peer : clientDictionary.values())
+		{            
+            //If this isn't the client the peer list is being sent to
+            if(!client.sessionID.equals(peer.sessionID))
+            	//Add this client to he peer list
+            	peerList.add(peer.sessionID);
+        }
+
+		response.put("peers", peerList);
+
+		sendToOne(client, response);
     }
 
     private class ClientConnection
@@ -311,35 +376,18 @@ public class ConnectionManager
 			readMessage.interrupt();
 		}
 	}
-/*
-	//Facilitates a connection between two clients
-	public class DataServer implements Callable
-	{
-		Socket socket;
 
-		public DataServer(ClientConnection socket)
+	//Facilitates a connection between two clients
+	public class DataServer
+	{
+		ClientConnection connection1;
+		ClientConnection connection2;
+
+		public DataServer(ClientConnection connection1, ClientConnection connection2)
 		{
 			//Open socket on new port
-			this.socket = socket;
+			this.connection1 = connection1;
+			this.connection2 = connection2;
 		}
-
-		@Override
-	    public Object call() throws Exception
-	    {
-	    	System.out.println("Connected");
-
-	    	BufferedInputStream inStream = new BufferedInputStream(socket.getInputStream());
-
-			while(!socket.isClosed())
-			{
-		    	//if(inStream.available() > 0)
-		        System.out.println(inStream.read());
-			}
-
-			System.out.println("Disconnected");
-
-	    	return null;
-	    }
 	}
-	*/
 }

@@ -30,6 +30,12 @@ public class ConnectionManagerMain implements ConnectionManagerEventListener
 		manager.startListeningForMessages();
 	}
 
+	public void closedConnection(String connectionName)
+	{
+		//remove client from list
+		connectionsModel.removeElement(connectionName);
+	}
+
 	public void receivedRequestForPrivateConnection(String requestor, String requestee)
 	{
 
