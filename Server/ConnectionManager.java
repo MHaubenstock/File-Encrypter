@@ -123,9 +123,12 @@ public class ConnectionManager
 				Object message = messages.take();
 				
 				//Handle the message
-				handleMessage(message);
+                if(message != null)
+                {
+                    System.out.println("Message Received: " + message);
+				    handleMessage(message);
+                }
 
-				System.out.println("Message Received: " + message);
 			}
 			catch(InterruptedException e){ e.printStackTrace(); }
 		}
@@ -238,10 +241,58 @@ public class ConnectionManager
     			break;
 
 
-    		case "":
-    			
+    		case "outgoingfilerequest":
+
+    			//Tell the receiving client that a file is on it's way
+    			response = new JSONObject();
+    			response.put("command", "incomingfilerequest");
+    			response.put("sender", message.get("sessionID"));
+    			response.put("receiver", message.get("peer"));
+                response.put("filename", message.get("filename"));
+                response.put("k1", message.get("k1"));
+                response.put("k2", message.get("k2"));
+                response.put("iv", message.get("iv"));
+
+                System.out.println("TESTING:  " + message.get("peer"));
+
+                sendToOne(clientDictionary.get(message.get("peer").toString()), response);
 
     			break;
+
+
+    		//Receiving client says they are good to go, so send the file
+    		case "sendincomingfile":
+
+    			//Set up data server between the two clients
+                //Once data server is created, tell sending client to start sending information
+                response = new JSONObject();
+                response.put("command", "startfiletransfer");
+                response.put("peer", message.get("sessionID"));
+                //response.put("peer", message.get("peer"));
+
+                sendToOne(clientDictionary.get(message.get("peer")), response);
+
+    			break;
+
+            case "senddatablock":
+
+                //Pass sent data along to this clients peer
+                response = new JSONObject();
+                response.put("command", "receivedatablock");
+                response.put("sender", message.get("sessionID"));
+                response.put("receiver", message.get("peer"));
+                response.put("data", message.get("data"));
+
+                sendToOne(clientDictionary.get(message.get("peer")), response);
+
+                break;
+
+
+            case "endfiletransfer":
+
+                //Send message to receiving peer that file transfer has finished
+
+                break;
 
 
     		case "disconnect":

@@ -21,6 +21,7 @@ public class ClientMessageHandler extends Thread
 	private String sessionID;
 	private Boolean initialized = false;
 	private Boolean connected = false;
+	private Boolean sendingToPeer = false;
 
 	//Threads
 	Thread readMessage;
@@ -146,18 +147,59 @@ public class ClientMessageHandler extends Thread
 		sendMessageToServer(obj);
 	}
 
-	public void sendFileToPeer(String peer, String fileName, String k1, String k2, String iv)
+	//Send a request to peer to send a file
+	public void sendFileRequestToPeer(String peer, String fileName, String k1, String k2, String iv)
 	{
 		JSONObject obj = new JSONObject();
 
-		obj.put("command", "sendfile");
+		obj.put("command", "outgoingfilerequest");
 		obj.put("peer", peer);
 		obj.put("filename", fileName);
 		obj.put("k1", k1);
 		obj.put("k2", k2);
 		obj.put("iv", iv);
 
-		sendMessageToServer()
+		sendMessageToServer(obj);
+	}
+
+	//Sends the file once it has been accepted
+	public void sendFileToPeer(String peer, String fileName, String k1, String k2, String iv)
+	{
+		sendingToPeer = true;
+
+		/*
+		JSONObject obj = new JSONObject();
+
+		obj.put("command", "sendfilerequest");
+		obj.put("peer", peer);
+		obj.put("filename", fileName);
+		obj.put("k1", k1);
+		obj.put("k2", k2);
+		obj.put("iv", iv);
+
+		sendMessageToServer(obj);
+		*/
+	}
+
+	public void sendDataBlockToPeer(String peer, String dataBlock)
+	{
+		JSONObject obj = new JSONObject();
+
+		obj.put("command", "senddatablock");
+		obj.put("peer", peer);
+		obj.put("data", dataBlock);
+
+		sendMessageToServer(obj);
+	}
+
+	public void endFileTransferToPeer(String peer)
+	{
+		JSONObject obj = new JSONObject();
+
+		obj.put("command", "endfiletransfer");
+		obj.put("peer", peer);
+
+		sendMessageToServer(obj);
 	}
 
 	private void acceptIncomingFile()
@@ -250,9 +292,35 @@ public class ClientMessageHandler extends Thread
     			break;
 
 
-    		case "incomingfile":
+    		case "incomingfilerequest":
+
+    			//Set up to receive the file
 
 
+    			//Send the green light to send file
+    			response = new JSONObject();
+    			response.put("command", "sendincomingfile");
+    			response.put("peer", message.get("sender"));
+
+    			//Send request event
+    			receivedFileSendRequest(message.get("filename").toString(), message.get("k1").toString(), message.get("k2").toString().toString(), message.get("iv").toString());
+
+    			sendMessageToServer(response);
+
+    			break;
+
+
+    		//You have been told to start the file transfer
+    		case "startfiletransfer":
+
+
+
+    			break;
+
+
+    		case "receivedatablock":
+
+    			recievedDataBlockFromPeer(message.get("peer").toString(), message.get("data").toString());
 
     			break;
 
@@ -277,6 +345,11 @@ public class ClientMessageHandler extends Thread
     public Boolean isConnected()
     {
     	return connected;
+    }
+
+    public Boolean isSendingToPeer()
+    {
+    	return sendingToPeer;
     }
 
     public synchronized void addEventListener(MessageEventListener listener) 
@@ -308,6 +381,46 @@ public class ClientMessageHandler extends Thread
             ((MessageEventListener) i.next()).receivedPeerList(peerList);
         }
     }
+
+    protected void receivedFileSendRequest(String fileName, String k1, String k2, String iv)
+    {
+    	Iterator i = _listeners.iterator();
+
+        while(i.hasNext())
+        {
+            ((MessageEventListener) i.next()).receivedFileSendRequest(fileName, k1, k2, iv);
+        }
+    }
+
+    protected void startFileTransfer(String peer)
+    {
+    	Iterator i = _listeners.iterator();
+
+        while(i.hasNext())
+        {
+            ((MessageEventListener) i.next()).startFileTransfer(peer);
+        }
+    }
+
+    protected void recievedDataBlockFromPeer(String peer, String dataBlock)
+    {
+    	Iterator i = _listeners.iterator();
+
+        while(i.hasNext())
+        {
+            ((MessageEventListener) i.next()).recievedDataBlockFromPeer(peer, dataBlock);
+        }
+    }
+
+	protected void endedFileTransferWithPeer(String peer)
+	{
+		Iterator i = _listeners.iterator();
+
+        while(i.hasNext())
+        {
+            ((MessageEventListener) i.next()).endedFileTransferWithPeer(peer);
+        }
+	}
 }
 
 

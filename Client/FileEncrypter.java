@@ -43,6 +43,7 @@ public class FileEncrypter implements EncryptEventListener, MessageEventListener
 	private JButton connectButton;
 	private JButton disconnectButton;
 	private JButton quitButton;
+	private JButton sendToPeerButton;
 	private DefaultListModel peerListModel;
 	private JList<String> peerList;
 	private StringBuilder sb = new StringBuilder();
@@ -114,10 +115,9 @@ public class FileEncrypter implements EncryptEventListener, MessageEventListener
 		try
 		{
 			//Send data to server
-			if(messageHandler.isConnected())
+			if(messageHandler.isConnected() && messageHandler.isSendingToPeer())
 			{
-				//System.out.println("SEND");
-				//toServerStream.write(bytes);//, 0, bytes.length);
+				messageHandler.sendDataBlockToPeer(peerList.getSelectedValue().toString(), bytes.toString());
 			}
 		}
 		catch(Exception e)
@@ -146,6 +146,72 @@ public class FileEncrypter implements EncryptEventListener, MessageEventListener
 
 		for(Object peer : peerList)
 			peerListModel.addElement((String)peer);
+	}
+
+	//The client has just received a request for another client to send a file with this info
+	//use this info to initialize an encrypted file transfer
+	public void receivedFileSendRequest(String fileName, String k1, String k2, String iv)
+	{
+		try
+		{
+			if(ocmRadioButton.isSelected())
+				ocmEncrypter.initializeIncrementalEncodingOrDecoding(fileName, k1, k2, iv);
+			else
+				icmEncrypter.initializeIncrementalEncodingOrDecoding(fileName, k1, k2, iv);
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
+
+	public void startFileTransfer(String peer)
+	{
+		new Thread(){
+			public void run() {
+				try
+				{
+					if(ocmRadioButton.isSelected())
+						ocmEncrypter.encode(file.getPath(), outputFile.getAbsolutePath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+					else
+						icmEncrypter.encode(file.getPath(), outputFile.getAbsolutePath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+				}
+				catch(IOException e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}.start();
+	}
+
+	public void recievedDataBlockFromPeer(String peer, String dataBlock)
+	{
+		try
+		{
+			if(ocmRadioButton.isSelected())
+				ocmEncrypter.decodeIncrementally(dataBlock.getBytes());
+			else
+				icmEncrypter.decodeIncrementally(dataBlock.getBytes());
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
+
+	public void endedFileTransferWithPeer(String peer)
+	{
+		try
+		{
+			if(ocmRadioButton.isSelected())
+				ocmEncrypter.endIncrementalEncodingOrDecoding();
+			else
+				icmEncrypter.endIncrementalEncodingOrDecoding();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -557,6 +623,62 @@ public class FileEncrypter implements EncryptEventListener, MessageEventListener
 				}
 			}
 		});
+
+		//Send file to peer button
+		sendToPeerButton.addActionListener(new ActionListener()
+		{	
+			public void actionPerformed(ActionEvent arg0)
+			{
+				if(messageHandler.isConnected())
+				{
+					boolean[] canRun = new boolean[5];
+					JTextField[] fields = new JTextField[2];
+					fields[0] = tf_key1;
+					fields[1] = tf_key2;
+									
+					//text view checking keys
+					for (int i = 0; i < 2; i++){
+						if (isHex(fields[i].getText()) == true)
+						{
+							canRun[i] = true;
+						}
+						else{
+							fields[i].setText("Not hex or wrong length");
+							canRun[i] = false;
+						}
+					}
+					//iv textarea
+					if (isHex(tf_iv.getText()) == true)
+						{
+							canRun[2] = true;
+						}
+						else{
+							tf_iv.setText("Not hex or wrong length");
+							canRun[2] = false;
+						}
+					
+					//check plain text
+					try{
+						file.exists();
+						canRun[3] = true;
+					}catch (Exception e){
+						canRun[3] = false;
+						tf_plainText.setText("Invalid file");
+					}				
+					
+					canRun[4] = true;
+					for (int i = 0; i < 5; i++){
+						if (canRun[i] == false){
+							canRun[4] = false;
+						}
+					}
+					
+					if (canRun[4] == true){
+						messageHandler.sendFileRequestToPeer(peerList.getSelectedValue().toString(), outputFile.getAbsolutePath(), tf_key1.getText(), tf_key2.getText(), tf_iv.getText().replaceAll(" ", ""));
+					}
+				}
+			}
+		});
 	}
 
 
@@ -680,6 +802,10 @@ public class FileEncrypter implements EncryptEventListener, MessageEventListener
 		disconnectButton = new JButton("Disconnect");
 		disconnectButton.setBounds(611, 34, 118, 46);
 		frmFileEncryptionInput.getContentPane().add(disconnectButton);
+
+		sendToPeerButton = new JButton("Send to Peer");
+		sendToPeerButton.setBounds(611, 318, 118, 46);
+		frmFileEncryptionInput.getContentPane().add(sendToPeerButton);
 
 		peerListModel = new DefaultListModel();
 		peerList = new JList<String>(peerListModel);

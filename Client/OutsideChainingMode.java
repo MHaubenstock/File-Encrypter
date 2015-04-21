@@ -7,7 +7,8 @@ import java.nio.file.*;
 public class OutsideChainingMode extends Encrypter
 {
     public OutsideChainingMode()
-    {    
+    {
+        incrementalEncodingInitialized = false;
     }
 
     public void encode(String filePath, String outputPath, String k1, String k2, String initVector) throws IOException
@@ -170,5 +171,30 @@ public class OutsideChainingMode extends Encrypter
 
         //Trigger finished event
         finishedProcessing();
+    }
+
+    public void decodeIncrementally(byte[] nextBlock) throws IOException
+    {
+        incrementalBytesRead += 8;
+
+        incrementalMessageSegment = nextBlock;//DES.twoLongsTo8ByteArray(Long.decode("0x" + nextBlock.substring(8,16)).longValue(), Long.decode("0x" + nextBlock.substring(0,8)).longValue());            
+        byte[] tempInitVector = incrementalMessageSegment;
+
+        //Triple des
+        incrementalMessageSegment = DES.decode(incrementalMessageSegment, incrementalK1, incrementalRound);
+        incrementalMessageSegment = DES.encode(incrementalMessageSegment, incrementalK2, incrementalRound);
+        incrementalMessageSegment = DES.decode(incrementalMessageSegment, incrementalK1, incrementalRound);
+
+        //XOR with the initialization vector
+        incrementalMessageSegment = DES.XORByteArrays(incrementalMessageSegment, incrementalInitializationVector);
+
+        //Set IV to the decrypted block for chaining
+        incrementalInitializationVector = tempInitVector;
+
+        //Write 64 bits to the out file
+        incrementalOutStream.write(incrementalMessageSegment);
+
+        //Trigger event
+        processedData(incrementalMessageSegment, incrementalBytesRead, incrementalBytesRead);
     }
 }
