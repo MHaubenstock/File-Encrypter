@@ -117,7 +117,13 @@ public class FileEncrypter implements EncryptEventListener, MessageEventListener
 			//Send data to server
 			if(messageHandler.isConnected() && messageHandler.isSendingToPeer())
 			{
-				messageHandler.sendDataBlockToPeer(peerList.getSelectedValue().toString(), bytes.toString());
+				//Convertg bytes to hex
+				String dataBlockHex = "";
+
+				for(int x = 0; x < bytes.length; ++x)
+					dataBlockHex += String.format("%02x", bytes[x]);
+
+				messageHandler.sendDataBlockToPeer(peerList.getSelectedValue().toString(), dataBlockHex);
 			}
 		}
 		catch(Exception e)
@@ -130,6 +136,12 @@ public class FileEncrypter implements EncryptEventListener, MessageEventListener
 	{
 		System.out.println("Finished Processing");
 		progressBar.setBorder(BorderFactory.createTitledBorder("Finished"));
+
+		//Tell peer file transfer has ended
+		if(messageHandler.isConnected() && messageHandler.isSendingToPeer())
+		{
+			messageHandler.endFileTransferToPeer(peerList.getSelectedValue().toString());
+		}
 	}
 
 	public void connectedToServer()
@@ -189,9 +201,9 @@ public class FileEncrypter implements EncryptEventListener, MessageEventListener
 		try
 		{
 			if(ocmRadioButton.isSelected())
-				ocmEncrypter.decodeIncrementally(dataBlock.getBytes());
+				ocmEncrypter.decodeIncrementally(dataBlock);
 			else
-				icmEncrypter.decodeIncrementally(dataBlock.getBytes());
+				icmEncrypter.decodeIncrementally(dataBlock);
 		}
 		catch(IOException e)
 		{

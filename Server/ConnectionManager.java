@@ -291,6 +291,11 @@ public class ConnectionManager
             case "endfiletransfer":
 
                 //Send message to receiving peer that file transfer has finished
+                response = new JSONObject();
+                response.put("command", "endfiletransfer");
+                response.put("peer", message.get("sessionID"));
+
+                sendToOne(clientDictionary.get(message.get("peer")), response);
 
                 break;
 

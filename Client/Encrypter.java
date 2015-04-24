@@ -18,7 +18,7 @@ public abstract class Encrypter
 	public abstract void encode(String filePath, String outputPath, String k1, String k2, String initVector) throws IOException;
 	public abstract void decode(String filePath, String outputPath, String k1, String k2, String initVector) throws IOException;
     //public abstract void encodeIncrementally(String nextBlock) throws IOException;
-    public abstract void decodeIncrementally(byte[] nextBlock) throws IOException;
+    public abstract void decodeIncrementally(String nextBlock) throws IOException;
 
     public void initializeIncrementalEncodingOrDecoding(String outputPath, String k1, String k2, String initVector) throws IOException
     {
@@ -49,7 +49,7 @@ public abstract class Encrypter
         incrementalRound = new DESRound();
         incrementalBytesRead = 0;
 
-        incrementalEncodingInitialized = false;
+        incrementalEncodingInitialized = true;
 
         //The beginning of incremental decoding happens when it's initialized
         beganProcessing();

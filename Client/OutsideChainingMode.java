@@ -145,7 +145,7 @@ public class OutsideChainingMode extends Encrypter
 
             d1 = Long.decode("0x" + messageSegString.substring(0,8)).longValue();
             d2 = Long.decode("0x" + messageSegString.substring(8,16)).longValue();
-            messageSegment = DES.twoLongsTo8ByteArray(d2, d1);            
+            messageSegment = DES.twoLongsTo8ByteArray(d2, d1);         
             tempInitVector = messageSegment;
 
             //Triple des
@@ -173,11 +173,11 @@ public class OutsideChainingMode extends Encrypter
         finishedProcessing();
     }
 
-    public void decodeIncrementally(byte[] nextBlock) throws IOException
+    public void decodeIncrementally(String nextBlock) throws IOException
     {
         incrementalBytesRead += 8;
 
-        incrementalMessageSegment = nextBlock;//DES.twoLongsTo8ByteArray(Long.decode("0x" + nextBlock.substring(8,16)).longValue(), Long.decode("0x" + nextBlock.substring(0,8)).longValue());            
+        incrementalMessageSegment = DES.twoLongsTo8ByteArray(Long.decode("0x" + nextBlock.substring(8,16)).longValue(), Long.decode("0x" + nextBlock.substring(0,8)).longValue());
         byte[] tempInitVector = incrementalMessageSegment;
 
         //Triple des

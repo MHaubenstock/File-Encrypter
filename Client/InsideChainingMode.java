@@ -6,8 +6,13 @@ import java.nio.file.*;
 
 public class InsideChainingMode extends Encrypter
 {
+    private byte[] incrementalTempCipherSeg;
+    private byte[] incrementalTempCipherSeg2 = new byte[]{0, 0, 0, 0, 0, 0, 0, 0};
+    private byte[] incrementalInterimMessageSeg = new byte[]{0, 0, 0, 0, 0, 0, 0, 0};
+
     public InsideChainingMode()
-    {    
+    {
+        incrementalEncodingInitialized = false;
     }
 
     public void encode(String filePath, String outputPath, String k1, String k2, String initVector) throws IOException
@@ -190,5 +195,35 @@ public class InsideChainingMode extends Encrypter
 
         //Trigger finished event
         finishedProcessing();
+    }
+
+    public void decodeIncrementally(String nextBlock) throws IOException
+    {
+        incrementalBytesRead += 8;
+
+        incrementalMessageSegment = DES.twoLongsTo8ByteArray(Long.decode("0x" + nextBlock.substring(8,16)).longValue(), Long.decode("0x" + nextBlock.substring(0,8)).longValue());            
+        incrementalTempCipherSeg = incrementalMessageSegment;
+
+        //Triple des
+        incrementalMessageSegment = DES.decode(incrementalMessageSegment, incrementalK1, incrementalRound);
+        incrementalMessageSegment = DES.XORByteArrays(DES.XORByteArrays(incrementalInterimMessageSeg, incrementalMessageSegment), incrementalTempCipherSeg2);
+        incrementalMessageSegment = DES.encode(incrementalMessageSegment, incrementalK2, incrementalRound);
+
+        incrementalInterimMessageSeg = incrementalMessageSegment;
+        incrementalTempCipherSeg2 = incrementalTempCipherSeg;
+
+        incrementalMessageSegment = DES.decode(incrementalMessageSegment, incrementalK1, incrementalRound);
+
+        //XOR with the initialization vector
+        incrementalMessageSegment = DES.XORByteArrays(incrementalMessageSegment, incrementalInitializationVector);
+
+        //Set IV to the decrypted block for chaining
+        incrementalInitializationVector = incrementalInterimMessageSeg;
+
+        //Write 64 bits to the out file
+        incrementalOutStream.write(incrementalMessageSegment);
+
+        //Trigger event
+        processedData(incrementalMessageSegment, incrementalBytesRead, incrementalBytesRead);
     }
 }

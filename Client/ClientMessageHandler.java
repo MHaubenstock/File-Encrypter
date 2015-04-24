@@ -160,6 +160,8 @@ public class ClientMessageHandler extends Thread
 		obj.put("iv", iv);
 
 		sendMessageToServer(obj);
+
+		sendingToPeer = true;
 	}
 
 	//Sends the file once it has been accepted
@@ -313,14 +315,22 @@ public class ClientMessageHandler extends Thread
     		//You have been told to start the file transfer
     		case "startfiletransfer":
 
-
+    			startFileTransfer(message.get("peer").toString());
 
     			break;
 
 
     		case "receivedatablock":
 
-    			recievedDataBlockFromPeer(message.get("peer").toString(), message.get("data").toString());
+    			recievedDataBlockFromPeer(message.get("sender").toString(), message.get("data").toString());
+
+    			break;
+
+
+    		case "endfiletransfer":
+
+
+    			endedFileTransferWithPeer(message.get("peer").toString());
 
     			break;
 
